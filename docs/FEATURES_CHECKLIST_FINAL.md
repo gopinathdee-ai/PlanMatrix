@@ -30,14 +30,21 @@
 - NextAuth for session management
 - Sonner for toast notifications
 
+✅ **Floor Plan Management:**
+- PDF upload with validation (PDF only, max 50MB)
+- Local file storage with configurable path
+- Metadata storage (building, floor number)
+- List view with stats (cubicles, occupancy)
+- Delete with cascading deletes
+- Duplicate building/floor prevention
+
 🔄 **In Progress:**
-- Dashboard metrics display
-- PDF upload & storage
-- Floor plan viewer
-- Marker placement interface
+- PDF viewer with pdfjs-dist
+- Marker placement with fabric.js
 - User management (manual & bulk)
 - Assignment management
 - Audit trail
+- Dashboard metrics
 
 ---
 
@@ -61,12 +68,12 @@
 - [ ] Database relationships documented
 
 ### Floor Plan Management
-- [ ] PDF file upload functionality
-- [ ] Store PDF locally (configurable path)
-- [ ] Floor plan metadata storage (building, floor number)
-- [ ] List all floor plans with stats
-- [ ] Display floor plan details
-- [ ] Delete floor plan (cascades to markers)
+- [x] PDF file upload functionality
+- [x] Store PDF locally (configurable path)
+- [x] Floor plan metadata storage (building, floor number)
+- [x] List all floor plans with stats (cubicles, available, upload date)
+- [x] Display floor plan details
+- [x] Delete floor plan (cascades to markers and assignments)
 
 ### PDF Viewer & Marker Placement
 - [ ] PDF viewer component (pdfjs-dist)
@@ -170,12 +177,12 @@
 - [x] Professional appearance with Kodchasan font
 
 ### Navigation & Pages
-- [ ] `/login` - Authentication
+- [x] `/login` - Authentication
 - [ ] `/dashboard` - Overview & stats
-- [ ] `/floor-plans` - List all floor plans
-- [ ] `/floor-plans/upload` - Upload new floor plan
+- [x] `/floor-plans` - List all floor plans
+- [x] `/floor-plans/upload` - Upload new floor plan
 - [ ] `/floor-plans/[id]` - View floor plan PDF
-- [ ] `/floor-plans/[id]/edit` - Place/edit markers
+- [ ] `/floor-plans/[id]/markers` - Place/edit markers
 - [ ] `/floor-plans/[id]/assign` - Assign users to markers
 - [ ] `/users` - User management (manual + bulk)
 - [ ] `/assignments` - View all assignments
@@ -407,10 +414,10 @@
 | Feature | Phase | Status | Priority |
 |---------|-------|--------|----------|
 | Authentication | 1 | ✅ Complete | MUST |
-| Dashboard | 1 | 🔄 In Progress | SHOULD |
-| PDF Upload | 1 | Planned | MUST |
-| PDF Viewer | 1 | Planned | MUST |
+| Floor Plan Management | 1 | ✅ Complete | MUST |
+| PDF Viewer | 1 | 🔄 Next | MUST |
 | Marker Placement | 1 | Planned | MUST |
+| Dashboard | 1 | Planned | SHOULD |
 | User Management | 1 | Planned | MUST |
 | Assignments (Manual) | 1 | Planned | MUST |
 | Assignments (Bulk) | 1 | Planned | MUST |
