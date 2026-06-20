@@ -1,23 +1,64 @@
 # Floor Plan Management System - Features Checklist (Final)
 
+## Current Tech Stack
+
+- **Frontend:** Next.js 16.2.9, TypeScript, Tailwind CSS, Kodchasan font
+- **Backend:** Next.js API Routes, NextAuth.js v4.24.14
+- **Database:** SQL Server (MSSQL), Knex.js 3.2.10 (migrations & queries)
+- **PDF:** pdfjs-dist, fabric.js (marker placement)
+- **UI:** Tailwind CSS, Sonner (toast notifications)
+- **Files:** Multer (uploads), CSV parsing
+
+**Previous Tech Replaced:**
+- ❌ Drizzle ORM → ✅ Knex.js (Drizzle doesn't support MSSQL)
+- ❌ Nunito/Montserrat/Ubuntu → ✅ Kodchasan
+- ❌ Connection strings → ✅ Individual env variables (DATABASE_HOST, DATABASE_USER, etc.)
+
+## What's Completed (As of June 20, 2026)
+
+✅ **Infrastructure:**
+- SQL Server database with Knex migrations
+- NextAuth.js authentication with hardcoded credentials (Phase 1)
+- Modern login page with two-panel layout
+- Dashboard structure with navbar & logout
+- Environment configuration (.env.local)
+
+✅ **Tech Stack:**
+- Next.js 16.2.9 with TypeScript
+- Tailwind CSS with Kodchasan font
+- Knex.js for migrations & queries
+- NextAuth for session management
+- Sonner for toast notifications
+
+🔄 **In Progress:**
+- Dashboard metrics display
+- PDF upload & storage
+- Floor plan viewer
+- Marker placement interface
+- User management (manual & bulk)
+- Assignment management
+- Audit trail
+
+---
+
 ## Phase 1: MVP (Target: 1-2 Weeks)
 
 ### Authentication & Security
-- [ ] NextAuth.js configured with basic credentials
-- [ ] Login page (admin/password123)
-- [ ] Session management (HTTP-only cookies)
-- [ ] Protected routes (redirect to login if not authenticated)
-- [ ] Logout functionality
-- [ ] Role system: User + IT Admin roles
-- [ ] IT Admin flag on users table
+- [x] NextAuth.js configured with basic credentials
+- [x] Login page with modern two-panel layout (admin@planmatrix.local/Password123)
+- [x] Session management (HTTP-only cookies)
+- [x] Protected routes (redirect to login if not authenticated)
+- [x] Logout functionality with redirect to login
+- [x] Role system: User + IT Admin roles
+- [x] IT Admin flag on users table
 
 ### Database & Infrastructure
-- [ ] SQL Server database created (on-prem or Azure SQL)
-- [ ] Drizzle ORM configured for SQL Server
-- [ ] All tables created (floor_plans, markers, users, assignments, assignment_history, settings, import_logs)
-- [ ] Database indexes on key columns
-- [ ] Foreign keys with cascading deletes
-- [ ] Relationships configured in Drizzle
+- [x] SQL Server database created (on-prem, localhost)
+- [x] Knex.js configured for SQL Server (migrations & query builder)
+- [x] All tables created (floor_plans, markers, users, assignments, assignment_history, settings, import_logs)
+- [x] Database indexes on key columns
+- [ ] Foreign keys with cascading deletes (Phase 2)
+- [ ] Database relationships documented
 
 ### Floor Plan Management
 - [ ] PDF file upload functionality
@@ -98,6 +139,7 @@
 - [ ] Export history (Phase 2)
 
 ### Dashboard
+- [x] Overview page structure in place
 - [ ] Overview page with key metrics:
   - [ ] Total floor plans
   - [ ] Total cubicles (markers)
@@ -116,16 +158,16 @@
 - [ ] Future: Enable/disable users, view system health
 
 ### UI & UX
-- [ ] Responsive design (desktop + mobile)
-- [ ] Tailwind CSS styling
+- [x] Responsive design (desktop + mobile ready)
+- [x] Tailwind CSS styling
 - [ ] Modern components (shadcn/ui where applicable)
-- [ ] FontAwesome/Lucide icons throughout
-- [ ] Navbar with navigation links
-- [ ] Toast notifications on all actions (success/error)
-- [ ] Loading states (spinners, disabled buttons)
-- [ ] Error messages clear & actionable
-- [ ] Consistent color scheme
-- [ ] Professional appearance
+- [ ] Lucide icons throughout
+- [x] Navbar with logout button
+- [x] Toast notifications for errors (success/error)
+- [x] Loading states (disabled buttons)
+- [x] Error messages clear & actionable
+- [x] Consistent blue gradient color scheme
+- [x] Professional appearance with Kodchasan font
 
 ### Navigation & Pages
 - [ ] `/login` - Authentication
@@ -223,16 +265,16 @@
 ## MVP Success Criteria (Go/No-Go)
 
 **MUST HAVE (Block Release If Missing):**
-- ✅ Can upload PDF floor plan
-- ✅ Can place markers on floor plan
-- ✅ Can add users (manual + bulk)
-- ✅ Can assign users to cubicles (manual + bulk)
-- ✅ Can reassign/remove assignments
-- ✅ Assignment history logged
-- ✅ Dashboard shows occupancy stats
-- ✅ IT Admin can configure PDF storage path
-- ✅ No critical bugs
-- ✅ Responsive UI
+- [ ] Can upload PDF floor plan
+- [ ] Can place markers on floor plan
+- [ ] Can add users (manual + bulk)
+- [ ] Can assign users to cubicles (manual + bulk)
+- [ ] Can reassign/remove assignments
+- [ ] Assignment history logged
+- [ ] Dashboard shows occupancy stats
+- [ ] IT Admin can configure PDF storage path
+- [x] No critical bugs (so far)
+- [x] Responsive UI
 
 **SHOULD HAVE (Nice to Release With):**
 - ✅ Error messages are clear
@@ -315,10 +357,10 @@
 
 ## Deployment Checklist
 
-- [ ] SQL Server database created (on-prem or Azure)
-- [ ] Environment variables configured
-- [ ] DATABASE_URL points to production DB
-- [ ] NEXTAUTH_SECRET generated & set
+- [x] SQL Server database created (on-prem, localhost)
+- [x] Environment variables configured (.env.local)
+- [x] Individual DB variables set (DATABASE_HOST, DATABASE_PORT, DATABASE_NAME, DATABASE_USER, DATABASE_PASSWORD)
+- [x] NEXTAUTH_SECRET generated & set
 - [ ] PDF storage path configured
 - [ ] PDF storage directory created & writable
 - [ ] Node.js v18+ installed on server
@@ -364,7 +406,8 @@
 
 | Feature | Phase | Status | Priority |
 |---------|-------|--------|----------|
-| Authentication | 1 | In Progress | MUST |
+| Authentication | 1 | ✅ Complete | MUST |
+| Dashboard | 1 | 🔄 In Progress | SHOULD |
 | PDF Upload | 1 | Planned | MUST |
 | PDF Viewer | 1 | Planned | MUST |
 | Marker Placement | 1 | Planned | MUST |
@@ -372,10 +415,9 @@
 | Assignments (Manual) | 1 | Planned | MUST |
 | Assignments (Bulk) | 1 | Planned | MUST |
 | History/Audit | 1 | Planned | MUST |
-| Dashboard | 1 | Planned | SHOULD |
 | IT Admin Settings | 1 | Planned | SHOULD |
-| Error Handling | 1 | Planned | MUST |
-| UI Polish | 1 | Planned | SHOULD |
+| Error Handling | 1 | 🔄 In Progress | MUST |
+| UI Polish | 1 | 🔄 In Progress | SHOULD |
 | Entra ID | 2 | Not Started | LATER |
 | Auto-Assign | 2 | Not Started | LATER |
 

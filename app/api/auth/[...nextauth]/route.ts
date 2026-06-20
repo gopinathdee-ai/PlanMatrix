@@ -6,19 +6,19 @@ const handler = NextAuth({
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        username: { label: "Username", type: "text" },
+        username: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        // Phase 1: Basic auth
+        // Phase 1: Accept hardcoded admin credentials
         if (
-          credentials?.username === process.env.ADMIN_USERNAME &&
+          credentials?.username === "admin@planmatrix.local" &&
           credentials?.password === process.env.ADMIN_PASSWORD
         ) {
           return {
             id: "admin",
             name: "Administrator",
-            email: "admin@office.local",
+            email: "admin@planmatrix.local",
             isITAdmin: true,
           };
         }

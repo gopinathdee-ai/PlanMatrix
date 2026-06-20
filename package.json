@@ -3,23 +3,29 @@
   "version": "1.0.0",
   "description": "Real floor plan-based cubicle management system",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:initialize:complete": "node scripts/init-db-complete.js",
-    "db:generate": "drizzle-kit generate:mssql",
-    "db:push": "drizzle-kit push:mssql",
-    "db:studio": "drizzle-kit studio"
+    "db:migrate": "knex migrate:latest",
+    "db:migrate:status": "knex migrate:status",
+    "db:migrate:rollback": "knex migrate:rollback",
+    "db:seed:mandatory": "knex seed:run --specific=002_mandatory_seed.js",
+    "db:seed:optional": "knex seed:run --specific=003_optional_seed.js",
+    "db:initialize": "node scripts/db-setup-interactive.js",
+    "db:reset": "node scripts/db-reset.js",
+    "db:reset:create": "node scripts/db-reset-create.js"
   },
   "dependencies": {
     "@tailwindcss/forms": "^0.5.6",
     "autoprefixer": "^10.4.16",
     "axios": "^1.6.0",
     "csv-parse": "^5.4.1",
-    "drizzle-orm": "^0.45.2",
+    "dotenv": "^17.4.2",
     "fabric": "^7.4.0",
+    "knex": "^3.2.10",
     "mssql": "^12.5.5",
     "multer": "^1.4.5-lts.1",
     "next": "^16.2.9",
@@ -37,7 +43,6 @@
     "@types/node": "^20.10.0",
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
-    "drizzle-kit": "^0.31.10",
     "eslint": "^8.54.0",
     "eslint-config-next": "^14.0.0"
   }

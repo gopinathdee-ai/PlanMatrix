@@ -1,1143 +1,416 @@
 # CLAUDE CODE PROMPT - Floor Plan Management System (Real PDF + Bulk Operations)
 
-**IMPORTANT**: Paste this entire prompt into Claude Code. It will guide Claude through building the complete system.
+**IMPORTANT**: Use this as your guide to build the Floor Plan Management System. Claude Code will help implement step-by-step.
 
 ---
 
-## CONTEXT
+## PROJECT OVERVIEW
 
-You are building a **Real Floor Plan Cubicle Management System** with:
-- PDF floor plan uploads (interactive marker placement)
-- Bulk operations (CSV import for users and assignments)
-- Manual workflows (add user, assign cubicle one-by-one)
-- SQL Server backend
-- Minimal user base, simple roles (User + IT Admin)
+You are building a **Real Floor Plan Cubicle Management System** for managing office cubicles using interactive PDF floor plans.
 
-**Tech Stack:**
-- Next.js 14 (App Router, TypeScript)
-- SQL Server (on-prem or Azure SQL)
-- Drizzle ORM (drizzle-orm/mssql)
-- pdfjs-dist (PDF viewer)
-- fabric.js (interactive canvas for marker placement)
-- multer (file uploads)
-- NextAuth.js (basic auth Phase 1)
-- Tailwind CSS + shadcn/ui
-- Sonner (toast notifications)
+**Core Features:**
+- Upload and manage PDF floor plans
+- Place interactive markers (cubicles) on floor plans
+- Manually assign employees to cubicles
+- Bulk import users and assignments via CSV
+- Track all assignment changes in audit trail
+- Dashboard with occupancy statistics
+
+**User Base:** Small team (10-50 users), IT Admin makes all changes
 
 ---
 
-## BUILD SEQUENCE
+## CURRENT TECH STACK
 
-### STEP 1: Project Setup & Database
+- **Frontend:** Next.js 16.2.9, TypeScript, Tailwind CSS, Kodchasan font
+- **Backend:** Next.js API Routes, NextAuth.js v4.24.14
+- **Database:** SQL Server (MSSQL), Knex.js 3.2.10 for migrations & queries
+- **PDF Handling:** pdfjs-dist (viewer), fabric.js (interactive markers)
+- **File Uploads:** Multer for PDF/CSV uploads
+- **UI:** Sonner for toast notifications, Tailwind CSS for styling
 
-**Task 1.1: Initialize Next.js Project**
-```bash
-npx create-next-app@latest floorplan-system \
-  --typescript \
-  --tailwind \
-  --eslint \
-  --app \
-  --no-src-dir \
-  --import-alias '@/*'
-
-cd floorplan-system
-
-npm install drizzle-orm mssql axios next-auth next-auth@beta sonner pdfjs-dist fabric multer
-npm install -D drizzle-kit @types/multer
-```
-
-**Task 1.2: Environment Configuration**
-
-Create `.env.local`:
-```env
-# Database
-DATABASE_URL="Server=localhost;Database=floorplan_db;User Id=sa;Password=YourPassword123;Encrypt=false;"
-
-# Or Azure SQL:
-# DATABASE_URL="Server=server-name.database.windows.net;Database=floorplan_db;User Id=admin@server;Password=Password123;Encrypt=true;"
-
-# NextAuth
-NEXTAUTH_SECRET="generate-with-openssl-rand-base64-32"
-NEXTAUTH_URL="http://localhost:3000"
-
-# Admin Credentials (Phase 1)
-ADMIN_USERNAME="admin"
-ADMIN_PASSWORD="Password123"
-
-# PDF Storage
-PDF_STORAGE_PATH="./public/floor-plans"
-# Or network share: "\\\\fileserver\\floorplans"
-# Or Azure: handled via Azure Blob (Phase 2)
-```
-
-Generate `NEXTAUTH_SECRET`:
-```bash
-openssl rand -base64 32
-```
-
-**Task 1.3: Drizzle Configuration**
-
-Create `drizzle.config.ts` (root):
-```typescript
-import type { Config } from "drizzle-kit";
-
-export default {
-  schema: "./db/schema.ts",
-  out: "./db/migrations",
-  driver: "mssql",
-  dbCredentials: {
-    connectionString: process.env.DATABASE_URL!,
-  },
-} satisfies Config;
-```
-
-**Task 1.4: Database Schema**
-
-Create `db/schema.ts`:
-```typescript
-import {
-  sqliteTable,
-  sql,
-  int,
-  varchar,
-  boolean,
-  timestamp,
-  text,
-  index,
-  uniqueIndex,
-  primaryKey,
-  foreignKey,
-} from "drizzle-orm/sql-js";
-import { relations } from "drizzle-orm";
-
-// Floor Plans (stores PDF metadata)
-export const floorPlans = sqliteTable(
-  "floor_plans",
-  {
-    id: int("id").primaryKey({ autoIncrement: true }),
-    building: varchar("building", { length: 255 }).notNull(),
-    floorNumber: varchar("floor_number", { length: 50 }).notNull(),
-    pdfFilename: varchar("pdf_filename", { length: 255 }).notNull(),
-    pdfUrl: varchar("pdf_url", { length: 500 }).notNull(),
-    uploadedAt: timestamp("uploaded_at").notNull().defaultNow(),
-    createdBy: varchar("created_by", { length: 255 }),
-  },
-  (table) => ({
-    buildingFloorIdx: index("idx_building_floor").on(
-      table.building,
-      table.floorNumber
-    ),
-  })
-);
-
-// Markers (cubicles on floor plans)
-export const markers = sqliteTable(
-  "markers",
-  {
-    id: int("id").primaryKey({ autoIncrement: true }),
-    floorPlanId: int("floor_plan_id").notNull(),
-    markerNumber: varchar("marker_number", { length: 50 }).notNull(),
-    pixelX: int("pixel_x").notNull(),
-    pixelY: int("pixel_y").notNull(),
-    pdfPageNumber: int("pdf_page_number").default(1),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
-  },
-  (table) => ({
-    floorPlanIdIdx: index("idx_markers_floor_plan_id").on(table.floorPlanId),
-    uniqueMarker: uniqueIndex("unique_marker_per_floor").on(
-      table.floorPlanId,
-      table.markerNumber
-    ),
-  })
-);
-
-// Users (employees)
-export const users = sqliteTable(
-  "users",
-  {
-    id: int("id").primaryKey({ autoIncrement: true }),
-    email: varchar("email", { length: 255 }).notNull().unique(),
-    name: varchar("name", { length: 255 }).notNull(),
-    department: varchar("department", { length: 255 }),
-    entraId: varchar("entra_id", { length: 255 }), // Phase 2
-    isITAdmin: boolean("is_it_admin").default(false),
-    status: varchar("status", { length: 50 }).default("active"),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
-    updatedAt: timestamp("updated_at").notNull().defaultNow(),
-  },
-  (table) => ({
-    emailIdx: index("idx_users_email").on(table.email),
-    statusIdx: index("idx_users_status").on(table.status),
-  })
-);
-
-// Assignments (user → marker)
-export const assignments = sqliteTable(
-  "assignments",
-  {
-    id: int("id").primaryKey({ autoIncrement: true }),
-    userId: int("user_id").notNull().unique(),
-    markerId: int("marker_id").notNull().unique(),
-    assignedAt: timestamp("assigned_at").notNull().defaultNow(),
-    source: varchar("source", { length: 50 }).default("manual"), // manual, bulk-csv
-    updatedAt: timestamp("updated_at").notNull().defaultNow(),
-  },
-  (table) => ({
-    userIdIdx: index("idx_assignments_user_id").on(table.userId),
-    markerIdIdx: index("idx_assignments_marker_id").on(table.markerId),
-  })
-);
-
-// Assignment History (audit trail)
-export const assignmentHistory = sqliteTable(
-  "assignment_history",
-  {
-    id: int("id").primaryKey({ autoIncrement: true }),
-    userId: int("user_id").notNull(),
-    oldMarkerId: int("old_marker_id"),
-    newMarkerId: int("new_marker_id"),
-    action: varchar("action", { length: 50 }).notNull(), // assign, reassign, remove
-    source: varchar("source", { length: 50 }).default("manual"),
-    timestamp: timestamp("timestamp").notNull().defaultNow(),
-  },
-  (table) => ({
-    userIdIdx: index("idx_history_user_id").on(table.userId),
-    timestampIdx: index("idx_history_timestamp").on(table.timestamp),
-  })
-);
-
-// Settings (IT Admin configuration)
-export const settings = sqliteTable("settings", {
-  id: int("id").primaryKey({ autoIncrement: true }),
-  key: varchar("key", { length: 255 }).notNull().unique(),
-  value: text("value").notNull(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-// Import Logs (track bulk operations)
-export const importLogs = sqliteTable("import_logs", {
-  id: int("id").primaryKey({ autoIncrement: true }),
-  type: varchar("type", { length: 50 }).notNull(), // users, assignments
-  filename: varchar("filename", { length: 255 }).notNull(),
-  successCount: int("success_count").default(0),
-  errorCount: int("error_count").default(0),
-  errors: text("errors"), // JSON array of errors
-  timestamp: timestamp("timestamp").notNull().defaultNow(),
-});
-
-// Relations
-export const floorPlansRelations = relations(floorPlans, ({ many }) => ({
-  markers: many(markers),
-}));
-
-export const markersRelations = relations(markers, ({ one, many }) => ({
-  floorPlan: one(floorPlans, {
-    fields: [markers.floorPlanId],
-    references: [floorPlans.id],
-  }),
-  assignment: one(assignments),
-  history: many(assignmentHistory),
-}));
-
-export const usersRelations = relations(users, ({ one, many }) => ({
-  assignment: one(assignments),
-  history: many(assignmentHistory),
-}));
-
-export const assignmentsRelations = relations(assignments, ({ one }) => ({
-  user: one(users, {
-    fields: [assignments.userId],
-    references: [users.id],
-  }),
-  marker: one(markers, {
-    fields: [assignments.markerId],
-    references: [markers.id],
-  }),
-}));
-
-export const assignmentHistoryRelations = relations(
-  assignmentHistory,
-  ({ one }) => ({
-    user: one(users, {
-      fields: [assignmentHistory.userId],
-      references: [users.id],
-    }),
-    marker: one(markers, {
-      fields: [assignmentHistory.newMarkerId],
-      references: [markers.id],
-    }),
-  })
-);
-```
-
-**Note:** The schema above uses SQLite syntax for simplicity in this prompt. For SQL Server, adjust to use `mssql` driver syntax in actual implementation.
-
-**Task 1.5: Database Connection**
-
-Create `lib/db.ts`:
-```typescript
-import { drizzle } from "drizzle-orm/mssql";
-import { createPool } from "mssql";
-import * as schema from "@/db/schema";
-
-const pool = new createPool({
-  server: process.env.DB_SERVER || "localhost",
-  database: process.env.DB_NAME || "floorplan_db",
-  authentication: {
-    type: "default",
-    options: {
-      userName: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-    },
-  },
-  options: {
-    encrypt: process.env.DB_ENCRYPT === "true",
-    trustServerCertificate: true,
-  },
-});
-
-export const db = drizzle(pool, { schema });
-```
-
-**Task 1.6: Initialize Database**
-
-```bash
-# Generate migrations
-npx drizzle-kit generate:mssql
-
-# Push schema to database
-npx drizzle-kit push:mssql
-```
+**Status:** Auth & database infrastructure complete. Need to build features.
 
 ---
 
-### STEP 2: Authentication
+## DATABASE SCHEMA
 
-**Task 2.1: NextAuth Configuration**
+The following tables are already created via Knex migrations:
 
-Create `app/api/auth/[...nextauth]/route.ts`:
-```typescript
-import NextAuth from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
+**floor_plans** - PDF floor plan metadata
+- id, building, floor_number, pdf_filename, pdf_url, uploaded_at, created_by
 
-const handler = NextAuth({
-  providers: [
-    CredentialsProvider({
-      name: "Credentials",
-      credentials: {
-        username: { label: "Username", type: "text" },
-        password: { label: "Password", type: "password" },
-      },
-      async authorize(credentials) {
-        // Phase 1: Basic auth
-        if (
-          credentials?.username === process.env.ADMIN_USERNAME &&
-          credentials?.password === process.env.ADMIN_PASSWORD
-        ) {
-          return {
-            id: "admin",
-            name: "Administrator",
-            email: "admin@office.local",
-            isITAdmin: true,
-          };
-        }
-        return null;
-      },
-    }),
-  ],
-  pages: { signIn: "/login" },
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.isITAdmin = user.isITAdmin || false;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id;
-        session.user.isITAdmin = token.isITAdmin;
-      }
-      return session;
-    },
-  },
-});
+**markers** - Cubicle locations on floor plans
+- id, floor_plan_id, marker_number, pixel_x, pixel_y, pdf_page_number, created_at
 
-export { handler as GET, handler as POST };
-```
+**users** - Employee records
+- id, email, name, department, entra_id, is_it_admin, status, created_at, updated_at
 
-**Task 2.2: Login Page**
+**assignments** - User-to-marker relationships
+- id, user_id, marker_id, assigned_at, source (manual/bulk-csv), updated_at
 
-Create `app/login/page.tsx`:
-```typescript
-"use client";
+**assignment_history** - Audit trail
+- id, user_id, old_marker_id, new_marker_id, action (assign/reassign/remove), source, timestamp
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+**settings** - System configuration
+- id, key, value, updated_at
 
-export default function LoginPage() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    const result = await signIn("credentials", {
-      username,
-      password,
-      redirect: false,
-    });
-
-    if (result?.ok) {
-      toast.success("Login successful!");
-      router.push("/dashboard");
-    } else {
-      toast.error("Invalid credentials");
-    }
-    setLoading(false);
-  };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
-        <h1 className="text-4xl font-bold text-center mb-2 text-gray-800">
-          🏢 Floor Plan System
-        </h1>
-        <p className="text-center text-gray-600 mb-8">
-          Manage office cubicles and floor plans
-        </p>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Username
-            </label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="admin"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="••••••••"
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 font-medium transition"
-          >
-            {loading ? "Logging in..." : "Login"}
-          </button>
-        </form>
-        <p className="text-center text-sm text-gray-500 mt-4">
-          Demo: admin / Password123
-        </p>
-      </div>
-    </div>
-  );
-}
-```
+**import_logs** - Track bulk operations
+- id, type (users/assignments), filename, success_count, error_count, errors, timestamp
 
 ---
 
-### STEP 3: File Upload Configuration
+## PHASE 1: MVP FEATURES
 
-**Task 3.1: PDF Upload Handler**
+### 1. DASHBOARD (Priority: SHOULD)
 
-Create `lib/upload.ts`:
-```typescript
-import multer from "multer";
-import path from "path";
-import fs from "fs";
+**Goal:** Display key occupancy metrics at a glance.
 
-const uploadDir = process.env.PDF_STORAGE_PATH || "./public/floor-plans";
+**What to show:**
+- Total floor plans uploaded
+- Total cubicles (marker count)
+- Occupied cubicles
+- Available cubicles
+- Occupancy rate (%)
+- Total users
 
-// Ensure directory exists
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+**How it works:**
+- Query counts from floor_plans, markers, assignments tables
+- Display as cards/boxes with large numbers
+- Update on page load (or auto-refresh every 30 seconds)
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueName = `${Date.now()}-${file.originalname}`;
-    cb(null, uniqueName);
-  },
-});
-
-const fileFilter = (req: any, file: any, cb: any) => {
-  const allowedTypes = ["application/pdf"];
-  if (allowedTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error("Only PDF files allowed"), false);
-  }
-};
-
-export const upload = multer({
-  storage,
-  fileFilter,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
-});
-```
-
-**Task 3.2: CSV Upload Handler**
-
-Create `lib/csv-parser.ts`:
-```typescript
-import { parse } from "csv-parse/sync";
-
-export interface UserImportRow {
-  email: string;
-  name: string;
-  department?: string;
-}
-
-export interface AssignmentImportRow {
-  building?: string;
-  floor?: string;
-  markerNumber: string;
-  userEmail: string;
-}
-
-export function parseUserCSV(content: string): {
-  rows: UserImportRow[];
-  errors: string[];
-} {
-  const rows: UserImportRow[] = [];
-  const errors: string[] = [];
-
-  try {
-    const records = parse(content, {
-      columns: true,
-      skip_empty_lines: true,
-    });
-
-    records.forEach((record: any, index: number) => {
-      if (!record.email || !record.name) {
-        errors.push(`Row ${index + 2}: Missing email or name`);
-        return;
-      }
-
-      rows.push({
-        email: record.email.trim(),
-        name: record.name.trim(),
-        department: record.department?.trim() || undefined,
-      });
-    });
-  } catch (err: any) {
-    errors.push(`CSV parsing error: ${err.message}`);
-  }
-
-  return { rows, errors };
-}
-
-export function parseAssignmentCSV(content: string): {
-  rows: AssignmentImportRow[];
-  errors: string[];
-} {
-  const rows: AssignmentImportRow[] = [];
-  const errors: string[] = [];
-
-  try {
-    const records = parse(content, {
-      columns: true,
-      skip_empty_lines: true,
-    });
-
-    records.forEach((record: any, index: number) => {
-      if (!record.markerNumber) {
-        errors.push(`Row ${index + 2}: Missing marker number`);
-        return;
-      }
-
-      if (record.userEmail && record.userEmail.trim()) {
-        rows.push({
-          building: record.building?.trim(),
-          floor: record.floor?.trim(),
-          markerNumber: record.markerNumber.trim(),
-          userEmail: record.userEmail.trim(),
-        });
-      }
-    });
-  } catch (err: any) {
-    errors.push(`CSV parsing error: ${err.message}`);
-  }
-
-  return { rows, errors };
-}
-```
+**Route:** `/dashboard`
 
 ---
 
-### STEP 4: Core API Routes
-
-**Task 4.1: Floor Plan Upload**
-
-Create `app/api/floor-plans/upload/route.ts`:
-```typescript
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { handler } from "@/app/api/auth/[...nextauth]/route";
-import { db } from "@/lib/db";
-import { floorPlans } from "@/db/schema";
-import { upload } from "@/lib/upload";
-import { promisify } from "util";
-
-const uploadMiddleware = promisify(upload.single("pdf"));
-
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(handler);
-  if (!session)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  try {
-    // Parse form data
-    const formData = await req.formData();
-    const file = formData.get("pdf") as File;
-    const building = formData.get("building") as string;
-    const floorNumber = formData.get("floorNumber") as string;
-
-    if (!file || !building || !floorNumber) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    // Save file (simplified - in real implementation use multer with streams)
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const filename = `${Date.now()}-${file.name}`;
-    const filepath = `${process.env.PDF_STORAGE_PATH}/${filename}`;
-
-    // Write file
-    const fs = require("fs").promises;
-    await fs.writeFile(filepath, buffer);
-
-    // Save metadata to database
-    const floorPlan = await db
-      .insert(floorPlans)
-      .values({
-        building,
-        floorNumber,
-        pdfFilename: filename,
-        pdfUrl: `/floor-plans/${filename}`,
-        createdBy: session.user?.email || "unknown",
-      })
-      .returning();
-
-    return NextResponse.json(floorPlan[0], { status: 201 });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
-  }
-}
-```
-
-**Task 4.2: Floor Plans List**
-
-Create `app/api/floor-plans/route.ts`:
-```typescript
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { handler } from "@/app/api/auth/[...nextauth]/route";
-import { db } from "@/lib/db";
-
-export async function GET() {
-  const session = await getServerSession(handler);
-  if (!session)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const allFloorPlans = await db.query.floorPlans.findMany({
-    with: {
-      markers: {
-        with: { assignment: { with: { user: true } } },
-      },
-    },
-  });
-
-  return NextResponse.json(allFloorPlans);
-}
-```
-
-**Task 4.3: Users Bulk Import**
-
-Create `app/api/users/bulk-import/route.ts`:
-```typescript
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { handler } from "@/app/api/auth/[...nextauth]/route";
-import { db } from "@/lib/db";
-import { users, importLogs } from "@/db/schema";
-import { parseUserCSV } from "@/lib/csv-parser";
-import { eq } from "drizzle-orm";
-
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(handler);
-  if (!session)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  try {
-    const formData = await req.formData();
-    const file = formData.get("file") as File;
-
-    if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
-    }
-
-    const content = await file.text();
-    const { rows, errors: parseErrors } = parseUserCSV(content);
-
-    let successCount = 0;
-    const importErrors: string[] = [...parseErrors];
-
-    for (const row of rows) {
-      try {
-        // Check if user already exists
-        const existing = await db.query.users.findFirst({
-          where: eq(users.email, row.email),
-        });
-
-        if (existing) {
-          importErrors.push(`Row ${rows.indexOf(row) + 2}: User already exists`);
-          continue;
-        }
-
-        // Create user
-        await db
-          .insert(users)
-          .values({
-            email: row.email,
-            name: row.name,
-            department: row.department,
-            status: "active",
-          })
-          .returning();
-
-        successCount++;
-      } catch (err: any) {
-        importErrors.push(
-          `Row ${rows.indexOf(row) + 2}: ${err.message}`
-        );
-      }
-    }
-
-    // Log import
-    await db
-      .insert(importLogs)
-      .values({
-        type: "users",
-        filename: file.name,
-        successCount,
-        errorCount: importErrors.length,
-        errors: JSON.stringify(importErrors),
-      })
-      .returning();
-
-    return NextResponse.json({
-      successCount,
-      errorCount: importErrors.length,
-      errors: importErrors,
-    });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
-  }
-}
-```
-
-**Task 4.4: Users Manual Add**
-
-Create `app/api/users/route.ts`:
-```typescript
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { handler } from "@/app/api/auth/[...nextauth]/route";
-import { db } from "@/lib/db";
-import { users } from "@/db/schema";
-
-export async function GET() {
-  const session = await getServerSession(handler);
-  if (!session)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const allUsers = await db.query.users.findMany({
-    with: {
-      assignment: {
-        with: { marker: { with: { floorPlan: true } } },
-      },
-    },
-  });
-
-  return NextResponse.json(allUsers);
-}
-
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(handler);
-  if (!session)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { email, name, department } = await req.json();
-
-  const user = await db
-    .insert(users)
-    .values({ email, name, department, status: "active" })
-    .returning();
-
-  return NextResponse.json(user[0], { status: 201 });
-}
-```
-
-**Task 4.5: Assignments Bulk Import**
-
-Create `app/api/assignments/bulk-import/route.ts`:
-```typescript
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { handler } from "@/app/api/auth/[...nextauth]/route";
-import { db } from "@/lib/db";
-import { assignments, assignmentHistory, importLogs } from "@/db/schema";
-import { parseAssignmentCSV } from "@/lib/csv-parser";
-import { eq, and } from "drizzle-orm";
-
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(handler);
-  if (!session)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  try {
-    const formData = await req.formData();
-    const file = formData.get("file") as File;
-
-    if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
-    }
-
-    const content = await file.text();
-    const { rows, errors: parseErrors } = parseAssignmentCSV(content);
-
-    let successCount = 0;
-    const importErrors: string[] = [...parseErrors];
-
-    for (const row of rows) {
-      try {
-        // Find user
-        const user = await db.query.users.findFirst({
-          where: eq(users.email, row.userEmail),
-        });
-
-        if (!user) {
-          importErrors.push(
-            `Row ${rows.indexOf(row) + 2}: User not found (${row.userEmail})`
-          );
-          continue;
-        }
-
-        // Find marker
-        const marker = await db.query.markers.findFirst({
-          where: and(
-            eq(markers.markerNumber, row.markerNumber),
-            // Match floor plan by building/floor if provided
-          ),
-        });
-
-        if (!marker) {
-          importErrors.push(
-            `Row ${rows.indexOf(row) + 2}: Marker not found (${row.markerNumber})`
-          );
-          continue;
-        }
-
-        // Check if marker already assigned
-        const existing = await db.query.assignments.findFirst({
-          where: eq(assignments.markerId, marker.id),
-        });
-
-        if (existing) {
-          importErrors.push(
-            `Row ${rows.indexOf(row) + 2}: Cubicle already occupied`
-          );
-          continue;
-        }
-
-        // Create assignment
-        const assignment = await db
-          .insert(assignments)
-          .values({
-            userId: user.id,
-            markerId: marker.id,
-            source: "bulk-csv",
-          })
-          .returning();
-
-        // Log to history
-        await db.insert(assignmentHistory).values({
-          userId: user.id,
-          newMarkerId: marker.id,
-          action: "assign",
-          source: "bulk-csv",
-        });
-
-        successCount++;
-      } catch (err: any) {
-        importErrors.push(
-          `Row ${rows.indexOf(row) + 2}: ${err.message}`
-        );
-      }
-    }
-
-    // Log import
-    await db
-      .insert(importLogs)
-      .values({
-        type: "assignments",
-        filename: file.name,
-        successCount,
-        errorCount: importErrors.length,
-        errors: JSON.stringify(importErrors),
-      })
-      .returning();
-
-    return NextResponse.json({
-      successCount,
-      errorCount: importErrors.length,
-      errors: importErrors,
-    });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
-  }
-}
-```
-
-**Task 4.6: Assignments Manual & More**
-
-Create `app/api/assignments/route.ts`:
-```typescript
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { handler } from "@/app/api/auth/[...nextauth]/route";
-import { db } from "@/lib/db";
-import { assignments, assignmentHistory } from "@/db/schema";
-import { eq } from "drizzle-orm";
-
-// GET all assignments
-export async function GET() {
-  const session = await getServerSession(handler);
-  if (!session)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const allAssignments = await db.query.assignments.findMany({
-    with: {
-      user: true,
-      marker: { with: { floorPlan: true } },
-    },
-  });
-
-  return NextResponse.json(allAssignments);
-}
-
-// POST assign user to cubicle (manual)
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(handler);
-  if (!session)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { userId, markerId } = await req.json();
-
-  // Check if user already assigned
-  const existing = await db.query.assignments.findFirst({
-    where: eq(assignments.userId, userId),
-  });
-
-  if (existing) {
-    // Log reassignment
-    await db.insert(assignmentHistory).values({
-      userId,
-      oldMarkerId: existing.markerId,
-      newMarkerId: markerId,
-      action: "reassign",
-      source: "manual",
-    });
-
-    await db.delete(assignments).where(eq(assignments.id, existing.id));
-  } else {
-    // Log new assignment
-    await db.insert(assignmentHistory).values({
-      userId,
-      newMarkerId: markerId,
-      action: "assign",
-      source: "manual",
-    });
-  }
-
-  const assignment = await db
-    .insert(assignments)
-    .values({ userId, markerId, source: "manual" })
-    .returning();
-
-  const result = await db.query.assignments.findFirst({
-    where: eq(assignments.id, assignment[0].id),
-    with: {
-      user: true,
-      marker: { with: { floorPlan: true } },
-    },
-  });
-
-  return NextResponse.json(result, { status: 201 });
-}
-```
-
-Create `app/api/assignments/[id]/route.ts`:
-```typescript
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { handler } from "@/app/api/auth/[...nextauth]/route";
-import { db } from "@/lib/db";
-import { assignments, assignmentHistory } from "@/db/schema";
-import { eq } from "drizzle-orm";
-
-// PUT reassign
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(handler);
-  if (!session)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { markerId } = await req.json();
-  const assignmentId = parseInt(params.id);
-
-  const assignment = await db.query.assignments.findFirst({
-    where: eq(assignments.id, assignmentId),
-  });
-
-  if (!assignment) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-
-  // Log reassignment
-  await db.insert(assignmentHistory).values({
-    userId: assignment.userId,
-    oldMarkerId: assignment.markerId,
-    newMarkerId: markerId,
-    action: "reassign",
-    source: "manual",
-  });
-
-  const updated = await db
-    .update(assignments)
-    .set({ markerId })
-    .where(eq(assignments.id, assignmentId))
-    .returning();
-
-  return NextResponse.json(updated[0]);
-}
-
-// DELETE unassign
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const session = await getServerSession(handler);
-  if (!session)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const assignmentId = parseInt(params.id);
-
-  const assignment = await db.query.assignments.findFirst({
-    where: eq(assignments.id, assignmentId),
-  });
-
-  if (!assignment) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-
-  // Log removal
-  await db.insert(assignmentHistory).values({
-    userId: assignment.userId,
-    oldMarkerId: assignment.markerId,
-    action: "remove",
-    source: "manual",
-  });
-
-  await db.delete(assignments).where(eq(assignments.id, assignmentId));
-
-  return NextResponse.json({ success: true });
-}
-```
+### 2. FLOOR PLAN MANAGEMENT (Priority: MUST)
+
+**Goal:** Upload and manage PDF floor plans.
+
+**Features needed:**
+- **Upload page** (`/floor-plans/upload`)
+  - Form to select PDF file + building name + floor number
+  - File validation: PDF only, max 50MB
+  - Display upload progress
+  - Success message with floor plan ID
+  - Error messages if upload fails
+
+- **List page** (`/floor-plans`)
+  - Table/card view of all floor plans
+  - Show: building, floor, upload date, marker count, edit/delete buttons
+  - Delete button with confirmation
+  - Click to view/edit floor plan
+
+**Validation:**
+- Building and floor number required
+- PDF file required
+- No duplicate building/floor combinations
+
+**API Endpoints Needed:**
+- `POST /api/floor-plans/upload` - Save PDF and metadata
+- `GET /api/floor-plans` - List all floor plans
+- `DELETE /api/floor-plans/[id]` - Delete floor plan (cascade to markers)
 
 ---
 
-### STEP 5: Frontend Pages & Components
+### 3. PDF VIEWER WITH MARKER PLACEMENT (Priority: MUST)
 
-**(Continue in Part 2 due to length...)**
+**Goal:** View floor plan PDF and place/manage cubicle markers interactively.
 
-The frontend section will include:
-- Layout with Navbar
-- Dashboard
-- Floor Plans management
-- Floor Plan viewer with PDF + interactive marker placement (fabric.js)
-- Users management (manual + bulk upload)
-- Assignments view (manual + bulk upload)
-- IT Admin settings
-- History/audit trail
+**Features needed:**
+- **Viewer page** (`/floor-plans/[id]`)
+  - Display PDF using pdfjs-dist
+  - Show page 1 (no multi-page support yet)
+  - Zoom in/out buttons (25%, 50%, 100%, 150%)
+  - Pan support (drag to move around)
+  - Display all existing markers on the PDF
 
-Due to character limits, I'll continue in the next message with complete page components.
+- **Marker placement mode** (`/floor-plans/[id]/markers`)
+  - Click on PDF to place marker
+  - Prompt for marker name (e.g., "1509")
+  - Store pixel coordinates (x, y) where clicked
+  - Show marker on PDF with label
+  - List all markers below PDF (table)
+  - Edit marker name
+  - Delete marker with confirmation
+  - Show which user is assigned (if any)
 
----
+**Marker appearance:**
+- Circle with border and label
+- Color: green if empty, red if occupied
+- Hover shows full details
+- fabric.js handles interactive placement
 
-## CONTINUATION NOTICE
-
-This prompt is comprehensive. For the frontend implementation (pages, components for floor plan viewer, marker placement, CSV upload/download), those will be provided in the full Claude Code session.
-
-**Key Remaining Tasks:**
-- Floor plan PDF viewer component
-- Interactive marker placement (fabric.js integration)
-- CSV template generation & download
-- CSV upload handlers (frontend)
-- Admin settings panel
-- History viewer
-- Responsive UI with Tailwind
-
-**Start with this prompt, and Claude Code will help you build the complete system step-by-step.**
-
----
-
-## FINAL CHECKLIST FOR MVP
-
-✅ SQL Server connection & Drizzle setup
-✅ NextAuth basic auth (admin/password)
-✅ Floor plan PDF upload & metadata storage
-✅ PDF viewer component
-✅ Interactive marker placement (fabric.js)
-✅ User management (manual + bulk CSV)
-✅ Cubicle assignments (manual + bulk CSV)
-✅ CSV template download
-✅ Assignment reassign/remove
-✅ Audit history
-✅ IT Admin settings (PDF storage path)
-✅ Error handling & validation
-✅ Toast notifications
-✅ Responsive UI
+**API Endpoints Needed:**
+- `POST /api/floor-plans/[id]/markers` - Create marker
+- `PUT /api/floor-plans/[id]/markers/[markerId]` - Update marker
+- `DELETE /api/floor-plans/[id]/markers/[markerId]` - Delete marker
 
 ---
 
-**Ready to build with Claude Code!** 🚀
+### 4. USER MANAGEMENT (Priority: MUST)
 
+**Goal:** Add users manually and via bulk CSV import.
+
+**Manual add** (`/users/add`):
+- Form with: email, name, department
+- Email validation + duplicate check
+- Submit creates user in database
+- Success toast notification
+- List updated immediately
+
+**Bulk import** (`/users/import`):
+- Download CSV template
+- User uploads filled CSV
+- Columns: email, name, department
+- Validation:
+  - Email format check
+  - Duplicate email detection
+  - Name required
+- Display results: X users created, Y errors
+- Error details per row (show in modal or table)
+- Log import to import_logs table
+
+**List users** (`/users`):
+- Table showing: email, name, department, status, assigned cubicle, actions
+- Edit button (update name/department)
+- Deactivate button (soft delete)
+- Delete button
+
+**API Endpoints Needed:**
+- `POST /api/users` - Create single user
+- `POST /api/users/bulk-import` - CSV bulk import
+- `GET /api/users` - List all users
+- `PUT /api/users/[id]` - Update user
+- `DELETE /api/users/[id]` - Delete user
+
+---
+
+### 5. CUBICLE ASSIGNMENTS (Priority: MUST)
+
+**Goal:** Assign users to cubicles (manually and via bulk).
+
+**Manual assign** (`/floor-plans/[id]/assign`):
+- Show floor plan with all markers
+- Click marker → modal opens
+- If empty: dropdown to select unassigned user + assign button
+- If occupied: show current user + reassign/remove buttons
+- Reassign: remove old assignment, create new
+- Remove: unassign user, marker becomes empty
+- Log all changes to assignment_history
+- Toast notifications on success/error
+
+**Bulk assign** (`/assignments/bulk-import`):
+- Download assignment template (pre-filled with all markers)
+- CSV columns: building, floor, marker_number, user_email
+- User fills in emails
+- Upload and validate:
+  - Marker exists (by number + building/floor)
+  - User exists (by email)
+  - User not already assigned
+  - Marker not already occupied
+- Show results: X assigned, Y errors
+- Error details per row
+- Log import to import_logs table
+- All changes logged to assignment_history with source="bulk-csv"
+
+**List assignments** (`/assignments`):
+- Table: user email, cubicle location (building/floor/marker), assigned date, source
+- Edit button (reassign)
+- Remove button (unassign)
+
+**API Endpoints Needed:**
+- `POST /api/assignments` - Create assignment
+- `PUT /api/assignments/[id]` - Reassign user
+- `DELETE /api/assignments/[id]` - Remove assignment
+- `POST /api/assignments/bulk-import` - CSV bulk import
+- `GET /api/assignments` - List all assignments
+
+---
+
+### 6. AUDIT TRAIL (Priority: MUST)
+
+**Goal:** Track all assignment changes for compliance.
+
+**History page** (`/history`):
+- Table showing all assignment changes
+- Columns: timestamp, user email, action (assign/reassign/remove), old cubicle, new cubicle, source (manual/bulk-csv)
+- Sort by timestamp DESC (most recent first)
+- Pagination (top 100 per page)
+- Filter by user email (optional for Phase 1)
+- Export to CSV button (Phase 2)
+
+**What gets logged:**
+- Every assignment creation (action="assign")
+- Every reassignment (action="reassign", log old & new marker)
+- Every removal (action="remove", log old marker)
+- Source: "manual" or "bulk-csv"
+- Timestamp: auto-generated
+
+**API Endpoints Needed:**
+- `GET /api/history` - Fetch assignment history with pagination
+
+---
+
+### 7. ERROR HANDLING & VALIDATION
+
+**For all forms:**
+- Email format validation
+- Required field checks
+- Duplicate detection
+- File type validation (PDF only)
+- File size limit (50MB)
+
+**For all uploads:**
+- Show row-by-row errors
+- Continue processing even if some rows fail
+- Display summary: X succeeded, Y failed
+- List failed rows with reason
+
+**For all API calls:**
+- Return 401 if not authenticated
+- Return 400 for validation errors
+- Return 404 if resource not found
+- Return 500 with error message if server error
+- Never expose internal errors to frontend
+
+**Toast notifications:**
+- Success toast on completed actions
+- Error toast with clear message on failures
+- Info toast for important updates
+
+---
+
+### 8. NAVIGATION & PAGES
+
+Required pages:
+- `/` → Redirect to `/login`
+- `/login` → Login (already done)
+- `/dashboard` → Overview stats (TODO)
+- `/floor-plans` → List all floor plans (TODO)
+- `/floor-plans/upload` → Upload new PDF (TODO)
+- `/floor-plans/[id]` → View floor plan PDF (TODO)
+- `/floor-plans/[id]/markers` → Manage markers on plan (TODO)
+- `/floor-plans/[id]/assign` → Assign users to markers (TODO)
+- `/users` → Manage users (TODO)
+- `/assignments` → List assignments (TODO)
+- `/history` → View audit trail (TODO)
+- `/admin/settings` → Admin settings (Phase 2)
+
+All pages need:
+- Navbar with logout button
+- Breadcrumb or title
+- Back button where appropriate
+
+---
+
+## IMPLEMENTATION ORDER
+
+**Recommended build sequence:**
+
+1. **Dashboard** (metrics queries)
+2. **Floor Plans** (upload, list, delete)
+3. **PDF Viewer** (display + zoom/pan)
+4. **Marker Placement** (click to add, edit, delete)
+5. **User Management** (manual add, list, edit)
+6. **User Bulk Import** (CSV template, upload, validate)
+7. **Manual Assignment** (click marker, select user, assign)
+8. **Bulk Assignment** (CSV template with markers, upload, validate)
+9. **Audit Trail** (history view, pagination)
+10. **Polish & Testing** (error messages, edge cases, UI refinement)
+
+---
+
+## KEY REQUIREMENTS
+
+**Security:**
+- All routes require authentication
+- Check session before returning data
+- No credentials in logs or error messages
+
+**Performance:**
+- Paginate large lists (100 items per page)
+- Index queries on frequently searched columns (email, status, timestamp)
+- No N+1 queries (use eager loading for relationships)
+
+**UX:**
+- Loading spinners on async operations
+- Disabled buttons while loading
+- Clear error messages (not generic "Error occurred")
+- Success confirmations
+- Undo/warning for destructive actions
+
+**Data Integrity:**
+- Email uniqueness in users table
+- No duplicate marker numbers per floor plan
+- One user = one cubicle (via unique constraint)
+- One marker = one user (via unique constraint)
+- Cascading deletes (delete floor plan → delete markers → delete assignments)
+
+---
+
+## TESTING CHECKLIST
+
+Before marking feature complete:
+
+**Happy path:**
+- Can upload valid PDF
+- Can place multiple markers on PDF
+- Can add user and see in list
+- Can assign user to marker
+- Can reassign user to different marker
+- Can remove assignment
+- Can bulk import users from CSV
+- Can bulk import assignments from CSV
+- Can view history of all changes
+- Can delete floor plan (markers and assignments cascade)
+
+**Error cases:**
+- Upload non-PDF file → Error message
+- Upload oversized file → Error message
+- Add user with invalid email → Error message
+- Add duplicate email → Error message
+- Assign non-existent user → Error message
+- Assign to non-existent marker → Error message
+- Assign to occupied marker → Error message
+- Bulk import with errors → Show detailed errors per row
+
+**UI/UX:**
+- All buttons have hover effects
+- Forms show validation errors inline
+- Toast notifications appear and auto-dismiss
+- Loading states visible during async operations
+- Mobile responsive (test on phone/tablet)
+- Navbar works on all pages
+
+---
+
+## NOTES FOR CLAUDE
+
+- Use Knex for all database queries (already configured)
+- Use NextAuth session for authentication (already set up)
+- Use Sonner for toast notifications
+- Use fabric.js for PDF marker placement (draggable, clickable)
+- Use Tailwind CSS for all styling (consistent with existing UI)
+- Keep API routes simple and focused
+- Validate at API boundary, not just frontend
+- Log all errors to console for debugging
+- Test each feature before moving to next
+
+---
+
+## SUCCESS CRITERIA
+
+MVP is complete when:
+- Can upload floor plan PDF
+- Can place markers interactively on PDF
+- Can add users (manual + bulk CSV)
+- Can assign users to markers (manual + bulk CSV)
+- Can view and manage assignments
+- All changes logged to audit trail
+- No critical bugs
+- Responsive on desktop & mobile
+
+---
+
+**Ready to build!** Start with the Dashboard, then work through the implementation order above.

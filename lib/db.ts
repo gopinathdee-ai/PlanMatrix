@@ -1,13 +1,7 @@
-import { drizzle } from "drizzle-orm/mssql";
-import { Pool } from "mssql";
-import * as schema from "@/db/schema";
+import knex from "knex";
+import dbConfig from "@/lib/db-config";
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+export const db = knex({
+  ...dbConfig,
+  debug: process.env.NODE_ENV === "development",
 });
-
-pool.on("error", (err) => {
-  console.error("SQL Server pool error:", err);
-});
-
-export const db = drizzle(pool, { schema });
