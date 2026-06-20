@@ -76,19 +76,19 @@
 - [x] Delete floor plan (cascades to markers and assignments)
 
 ### PDF Viewer & Marker Placement
-- [ ] PDF viewer component (pdfjs-dist)
-- [ ] Display PDF on canvas
-- [ ] Zoom in/out functionality
-- [ ] Pan across PDF
-- [ ] Interactive canvas overlay (fabric.js)
-- [ ] Click on PDF to place marker
-- [ ] Name marker (e.g., "1509")
-- [ ] Show marker coordinates (pixel X, Y)
-- [ ] View all markers on floor plan
-- [ ] Edit marker (reposition, rename)
-- [ ] Delete marker
-- [ ] Color-coded markers (green=empty, red=occupied)
-- [ ] Marker tooltip showing occupant name
+- [x] PDF viewer component (pdfjs-dist)
+- [x] Display PDF on canvas
+- [x] Zoom in/out functionality
+- [x] Pan across PDF
+- [x] Interactive canvas overlay
+- [x] Click on PDF to place marker
+- [x] Name marker (e.g., "1509")
+- [x] Show marker coordinates (pixel X, Y)
+- [x] View all markers on floor plan
+- [x] Edit marker (reposition, rename)
+- [x] Delete marker
+- [x] Color-coded markers (green=empty, red=occupied)
+- [x] Marker tooltip showing occupant name
 
 ### User Management
 - [ ] Manual: Add user via form (email, name, department)
@@ -415,8 +415,8 @@
 |---------|-------|--------|----------|
 | Authentication | 1 | ✅ Complete | MUST |
 | Floor Plan Management | 1 | ✅ Complete | MUST |
-| PDF Viewer | 1 | 🔄 Next | MUST |
-| Marker Placement | 1 | Planned | MUST |
+| PDF Viewer | 1 | ✅ Complete | MUST |
+| Marker Placement | 1 | ✅ Complete | MUST |
 | Dashboard | 1 | Planned | SHOULD |
 | User Management | 1 | Planned | MUST |
 | Assignments (Manual) | 1 | Planned | MUST |

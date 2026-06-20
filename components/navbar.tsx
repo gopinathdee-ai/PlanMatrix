@@ -15,6 +15,34 @@ export function Navbar() {
               <div className="text-xs text-blue-200">Workspace Intelligence</div>
             </div>
           </Link>
+
+          <nav className="flex gap-6">
+            <Link
+              href="/dashboard"
+              className="text-white hover:text-blue-200 font-medium transition-colors"
+            >
+              Dashboard
+            </Link>
+            <Link
+              href="/floor-plans"
+              className="text-white hover:text-blue-200 font-medium transition-colors"
+            >
+              Floor Plans
+            </Link>
+            <Link
+              href="/users"
+              className="text-white hover:text-blue-200 font-medium transition-colors"
+            >
+              Users
+            </Link>
+            <Link
+              href="/assignments"
+              className="text-white hover:text-blue-200 font-medium transition-colors"
+            >
+              Assignments
+            </Link>
+          </nav>
+
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
             className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer active:scale-95"

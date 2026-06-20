@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 
 interface FloorPlan {
-  id: number;
+  id: string;
   building: string;
   floor_number: string;
   pdf_filename: string;
@@ -19,7 +19,8 @@ interface FloorPlan {
 export default function FloorsPage() {
   const [floorPlans, setFloorPlans] = useState<FloorPlan[]>([]);
   const [loading, setLoading] = useState(true);
-  const [deleting, setDeleting] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchFloorPlans = async () => {
@@ -38,9 +39,7 @@ export default function FloorsPage() {
     fetchFloorPlans();
   }, []);
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Delete this floor plan and all its markers?")) return;
-
+  const handleDelete = async (id: string) => {
     setDeleting(id);
     try {
       const res = await fetch(`/api/floor-plans/${id}`, { method: "DELETE" });
@@ -52,6 +51,7 @@ export default function FloorsPage() {
       toast.error("Failed to delete floor plan");
     } finally {
       setDeleting(null);
+      setConfirmDelete(null);
     }
   };
 
@@ -123,7 +123,7 @@ export default function FloorsPage() {
                     </button>
                   </Link>
                   <button
-                    onClick={() => handleDelete(plan.id)}
+                    onClick={() => setConfirmDelete(plan.id)}
                     disabled={deleting === plan.id}
                     className="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg font-medium text-sm transition-colors disabled:opacity-50"
                   >
@@ -132,6 +132,32 @@ export default function FloorsPage() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {confirmDelete && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm mx-4">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Floor Plan?</h3>
+              <p className="text-gray-600 mb-6">
+                This will delete the floor plan and all its markers. This action cannot be undone.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setConfirmDelete(null)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDelete(confirmDelete)}
+                  disabled={deleting === confirmDelete}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                >
+                  {deleting === confirmDelete ? "Deleting..." : "Delete"}
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

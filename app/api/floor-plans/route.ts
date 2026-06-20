@@ -1,10 +1,12 @@
+import "server-only";
+
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { handler } from "@/app/api/auth/[...nextauth]/route";
+import { POST as authHandler } from "@/app/api/auth/[...nextauth]/route";
 import { db } from "@/lib/db";
 
 export async function GET() {
-  const session = await getServerSession(handler);
+  const session = await getServerSession(authHandler);
   if (!session)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -16,14 +18,14 @@ export async function GET() {
       floorPlans.map(async (plan: any) => {
         const markerCount = await db("markers")
           .where("floor_plan_id", plan.id)
-          .count("* as count")
+          .count("*", "count")
           .first();
 
         const occupiedCount = await db("markers")
-          .leftJoin("assignments", "markers.id", "assignments.marker_id")
+          .leftJoin("assignments", "markers.id = assignments.marker_id")
           .where("markers.floor_plan_id", plan.id)
           .whereNotNull("assignments.id")
-          .count("* as count")
+          .count("*", "count")
           .first();
 
         return {
@@ -44,7 +46,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(handler);
+  const session = await getServerSession(authHandler);
   if (!session)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -91,7 +93,7 @@ export async function POST(req: NextRequest) {
     // Save file to disk
     const fs = require("fs").promises;
     const path = require("path");
-    const uploadDir = process.env.PDF_STORAGE_PATH || "./public/floor-plans";
+    const uploadDir = process.env.PDF_STORAGE_PATH || "./public/pdfs";
 
     try {
       await fs.mkdir(uploadDir, { recursive: true });
@@ -106,13 +108,16 @@ export async function POST(req: NextRequest) {
     await fs.writeFile(filepath, buffer);
 
     // Save metadata to database
-    const result = await db("floor_plans").insert({
+    const insertData = {
       building,
       floor_number: floorNumber,
       pdf_filename: filename,
-      pdf_url: `/floor-plans/${filename}`,
+      pdf_url: `/pdfs/${filename}`,
       created_by: session.user?.email || "unknown",
-    });
+    };
+    console.log("Inserting floor plan with data:", insertData);
+    const result = await db("floor_plans").insert(insertData);
+    console.log("Insert result:", result);
 
     return NextResponse.json(
       { id: result[0], building, floor_number: floorNumber },

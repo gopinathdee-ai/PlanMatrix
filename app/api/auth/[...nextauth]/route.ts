@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import bcrypt from "bcrypt";
 
 const handler = NextAuth({
   providers: [
@@ -10,19 +11,38 @@ const handler = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        // Phase 1: Accept hardcoded admin credentials
-        if (
-          credentials?.username === "admin@planmatrix.local" &&
-          credentials?.password === process.env.ADMIN_PASSWORD
-        ) {
-          return {
-            id: "admin",
-            name: "Administrator",
-            email: "admin@planmatrix.local",
-            isITAdmin: true,
-          };
+        if (!credentials?.username || !credentials?.password) {
+          return null;
         }
-        return null;
+
+        try {
+          const { db } = await import("@/lib/db");
+          const user = await db("users").where("email", credentials.username).first();
+
+          if (!user) {
+            return null;
+          }
+
+          if (!user.password_hash) {
+            return null;
+          }
+
+          const passwordMatch = await bcrypt.compare(credentials.password, user.password_hash);
+
+          if (!passwordMatch) {
+            return null;
+          }
+
+          return {
+            id: String(user.id),
+            name: user.name,
+            email: user.email,
+            isITAdmin: user.is_it_admin || false,
+          };
+        } catch (error) {
+          console.error("Auth error:", error);
+          return null;
+        }
       },
     }),
   ],

@@ -1,18 +1,21 @@
+import "server-only";
+
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { handler } from "@/app/api/auth/[...nextauth]/route";
+import { POST as authHandler } from "@/app/api/auth/[...nextauth]/route";
 import { db } from "@/lib/db";
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getServerSession(handler);
+  const params = await paramsPromise;
+  const session = await getServerSession(authHandler);
   if (!session)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-    const floorPlanId = parseInt(params.id);
+    const floorPlanId = params.id;
 
     // Check if floor plan exists
     const floorPlan = await db("floor_plans")
@@ -50,7 +53,7 @@ export async function DELETE(
     // Delete PDF file
     const fs = require("fs").promises;
     const path = require("path");
-    const uploadDir = process.env.PDF_STORAGE_PATH || "./public/floor-plans";
+    const uploadDir = process.env.PDF_STORAGE_PATH || "./public/pdfs";
     const filepath = path.join(uploadDir, floorPlan.pdf_filename);
 
     try {

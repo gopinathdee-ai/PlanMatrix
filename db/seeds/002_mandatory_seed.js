@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import bcrypt from "bcrypt";
 
 function generateRandomPassword(length = 10) {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -19,6 +20,7 @@ export async function seed(knex) {
   await knex("users").del();
 
   const adminPassword = generateRandomPassword(10);
+  const passwordHash = await bcrypt.hash(adminPassword, 10);
 
   await knex("users").insert({
     email: "admin@planmatrix.local",
@@ -26,6 +28,7 @@ export async function seed(knex) {
     department: "IT",
     is_it_admin: true,
     status: "active",
+    password_hash: passwordHash,
   });
 
   console.log("\n✅ Mandatory seed completed!");
