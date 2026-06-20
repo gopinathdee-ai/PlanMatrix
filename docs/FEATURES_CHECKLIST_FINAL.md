@@ -91,50 +91,50 @@
 - [x] Marker tooltip showing occupant name
 
 ### User Management
-- [ ] Manual: Add user via form (email, name, department)
+- [x] Manual: Add user via form (email, name, department)
 - [ ] Manual: Edit user info
-- [ ] Manual: Deactivate/delete user
-- [ ] Bulk: Download user import template (CSV)
-- [ ] Bulk: Upload CSV with multiple users
-- [ ] CSV validation (required fields, duplicate email check)
-- [ ] Error reporting per row
-- [ ] Success summary (created X users, Y errors)
-- [ ] List all users with stats
-- [ ] View user's current assignment
+- [x] Manual: Deactivate/delete user
+- [x] Bulk: Download user import template (CSV)
+- [x] Bulk: Upload CSV with multiple users
+- [x] CSV validation (required fields, duplicate email check)
+- [x] Error reporting per row
+- [x] Success summary (created X users, Y errors)
+- [x] List all users with stats
+- [x] View user's current assignment
 - [ ] Search/filter users
 
 ### Cubicle Assignment (Manual)
-- [ ] View floor plan with all markers
-- [ ] Click marker → assignment modal
-- [ ] For empty marker: dropdown with unassigned users
-- [ ] For occupied marker: show current occupant
-- [ ] Assign user to cubicle
-- [ ] See immediate UI feedback (marker color change)
-- [ ] Toast notification on success
-- [ ] Assignment logged to history
+- [x] View floor plan with all markers
+- [x] Click marker → assignment modal
+- [x] For empty marker: dropdown with unassigned users
+- [x] For occupied marker: show current occupant
+- [x] Assign user to cubicle
+- [x] See immediate UI feedback (marker color change)
+- [x] Toast notification on success
+- [x] Assignment logged to history
 
 ### Cubicle Assignment (Bulk)
-- [ ] Download assignment template (pre-filled with all markers)
-- [ ] Template includes: building, floor, marker_number, user_email
-- [ ] Admin fills user emails in CSV
-- [ ] Upload CSV file
-- [ ] CSV validation:
-  - [ ] Marker exists
-  - [ ] User exists
-  - [ ] No duplicate marker assignments
-  - [ ] No duplicate user assignments
-- [ ] Error reporting per row
-- [ ] Success summary (assigned X users, Y errors)
-- [ ] Bulk assignments logged to history with source="bulk-csv"
+- [x] Download assignment template (pre-filled with all markers)
+- [x] Template includes: building, floor, marker_number, user_email
+- [x] Admin fills user emails in CSV
+- [x] Upload CSV file
+- [x] CSV validation:
+  - [x] Marker exists
+  - [x] User exists
+  - [x] No duplicate marker assignments
+  - [x] No duplicate user assignments
+- [x] Error reporting per row
+- [x] Success summary (assigned X users, Y errors)
+- [x] Bulk assignments logged to history with source="bulk-csv"
 
 ### Cubicle Reassignment & Removal
-- [ ] Click occupied marker → show current user
-- [ ] Option to remove assignment
-- [ ] Remove unassigns user (marks cubicle available)
-- [ ] History logged as "remove" action
-- [ ] Reassign: Remove from old + Assign to new
-- [ ] History logged as "reassign" action
-- [ ] Toast notifications
+- [x] Click occupied marker → show current user
+- [x] Option to remove assignment
+- [x] Remove unassigns user (marks cubicle available)
+- [x] History logged as "remove" action
+- [x] Reassign: Remove from old + Assign to new
+- [x] History logged as "reassign" action
+- [x] Toast notifications
 
 ### Audit Trail & History
 - [ ] All assignment changes logged to assignment_history
@@ -181,11 +181,11 @@
 - [ ] `/dashboard` - Overview & stats
 - [x] `/floor-plans` - List all floor plans
 - [x] `/floor-plans/upload` - Upload new floor plan
-- [ ] `/floor-plans/[id]` - View floor plan PDF
-- [ ] `/floor-plans/[id]/markers` - Place/edit markers
-- [ ] `/floor-plans/[id]/assign` - Assign users to markers
-- [ ] `/users` - User management (manual + bulk)
-- [ ] `/assignments` - View all assignments
+- [x] `/floor-plans/[id]` - View floor plan PDF
+- [x] `/floor-plans/[id]/markers` - Place/edit markers
+- [x] `/floor-plans/[id]/assign` - Assign users to markers
+- [x] `/users` - User management (manual + bulk)
+- [x] `/assignments` - View all assignments
 - [ ] `/history` - Audit trail
 - [ ] `/admin/settings` - IT Admin settings (if IT Admin)
 - [ ] `/admin/logs` - IT Admin activity logs (if IT Admin)
@@ -417,14 +417,14 @@
 | Floor Plan Management | 1 | ✅ Complete | MUST |
 | PDF Viewer | 1 | ✅ Complete | MUST |
 | Marker Placement | 1 | ✅ Complete | MUST |
+| User Management | 1 | ✅ Complete | MUST |
+| Assignments (Manual) | 1 | ✅ Complete | MUST |
+| Assignments (Bulk) | 1 | ✅ Complete | MUST |
 | Dashboard | 1 | Planned | SHOULD |
-| User Management | 1 | Planned | MUST |
-| Assignments (Manual) | 1 | Planned | MUST |
-| Assignments (Bulk) | 1 | Planned | MUST |
 | History/Audit | 1 | Planned | MUST |
 | IT Admin Settings | 1 | Planned | SHOULD |
-| Error Handling | 1 | 🔄 In Progress | MUST |
-| UI Polish | 1 | 🔄 In Progress | SHOULD |
+| Error Handling | 1 | ✅ Complete | MUST |
+| UI Polish | 1 | ✅ Complete | SHOULD |
 | Entra ID | 2 | Not Started | LATER |
 | Auto-Assign | 2 | Not Started | LATER |
 

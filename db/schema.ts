@@ -36,6 +36,7 @@ export const users = sqlServer.table("users", {
   department: varchar("department", { length: 255 }),
   entraId: varchar("entra_id", { length: 255 }),
   isITAdmin: bit("is_it_admin").default(false),
+  isSystemUser: bit("is_system_user").default(false),
   status: varchar("status", { length: 50 }).default("active"),
   createdAt: datetime2("created_at").default(sql`CURRENT_TIMESTAMP`),
   updatedAt: datetime2("updated_at").default(sql`CURRENT_TIMESTAMP`),

@@ -41,9 +41,9 @@ class QueryBuilder {
     this.table = table;
   }
 
-  select(columns?: string | string[]): this {
-    if (columns) {
-      this.selectCols = Array.isArray(columns) ? columns : [columns];
+  select(...columns: string[]): this {
+    if (columns.length > 0) {
+      this.selectCols = columns;
     }
     return this;
   }
