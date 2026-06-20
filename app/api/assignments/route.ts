@@ -11,22 +11,67 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
+    // Get assignments without joins
     const assignments = await db("assignments")
       .select(
-        "assignments.id",
-        "assignments.user_id",
-        "assignments.marker_id",
-        "assignments.assigned_at",
-        "assignments.source",
-        "users.email",
-        "users.name",
-        "markers.marker_number",
-        "floor_plans.building",
-        "floor_plans.floor_number"
+        "id",
+        "user_id",
+        "marker_id",
+        "assigned_at",
+        "source"
       )
-      .orderBy("assignments.assigned_at", "desc");
+      .orderBy("assigned_at", "desc");
 
-    return NextResponse.json(assignments);
+    // Fetch related data separately (no joins to avoid QueryBuilder issues)
+    const allUsers = await db("users").select("id", "email", "name");
+    const allMarkers = await db("markers").select("id", "marker_number", "floor_plan_id");
+    const allFloorPlans = await db("floor_plans").select("id", "building", "floor_number");
+
+    const userIds = new Set(assignments.map((a: any) => a.user_id));
+    const markerIds = new Set(assignments.map((a: any) => a.marker_id));
+
+    const users = allUsers.filter((u: any) => userIds.has(u.id));
+    const markers = allMarkers.filter((m: any) => markerIds.has(m.id));
+
+    const floorPlanIds = new Set(markers.map((m: any) => m.floor_plan_id));
+    const floorPlans = allFloorPlans.filter((f: any) => floorPlanIds.has(f.id));
+
+    // Build lookup maps
+    const userMap = new Map(users.map((u: any) => [u.id, u]));
+    const markerMap = new Map(markers.map((m: any) => [m.id, m]));
+    const floorPlanMap = new Map(floorPlans.map((f: any) => [f.id, f]));
+
+    console.log("Users count:", users.length, "Markers count:", markers.length, "FloorPlans count:", floorPlans.length);
+    console.log("Assignments count:", assignments.length);
+    console.log("Sample assignment:", assignments[0]);
+    console.log("User map size:", userMap.size);
+    console.log("Marker map size:", markerMap.size);
+
+    // Enrich assignments with related data
+    const enriched = assignments.map((a: any) => {
+      const user = userMap.get(a.user_id);
+      const marker = markerMap.get(a.marker_id);
+      const floorPlan = marker ? floorPlanMap.get(marker.floor_plan_id) : null;
+
+      if (!user) console.warn("User not found for id:", a.user_id);
+      if (!marker) console.warn("Marker not found for id:", a.marker_id);
+
+      return {
+        id: a.id,
+        user_id: a.user_id,
+        marker_id: a.marker_id,
+        assigned_at: a.assigned_at,
+        source: a.source,
+        email: user?.email,
+        name: user?.name,
+        marker_number: marker?.marker_number,
+        building: floorPlan?.building,
+        floor_number: floorPlan?.floor_number,
+      };
+    });
+
+    console.log("Enriched result sample:", enriched[0]);
+    return NextResponse.json(enriched);
   } catch (error: any) {
     console.error("Assignments fetch error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });

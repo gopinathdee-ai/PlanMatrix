@@ -200,24 +200,19 @@ export default function ManualAssignmentPage({
         throw new Error(error.error || "Failed to assign cubicle");
       }
 
-      const assignment = await response.json();
+      // Refresh markers to show updated assignment with user name
+      const markersRes = await fetch(`/api/floor-plans/${params.id}/markers`);
+      if (markersRes.ok) {
+        const markerData = await markersRes.json();
+        setMarkers(markerData);
+      }
 
-      setMarkers(
-        markers.map((m) =>
-          m.id === selectedMarker.id
-            ? {
-                ...m,
-                assigned_user_id: assignment.user_id,
-                assigned_user_name: assignment.user_name,
-                assigned_user_email: assignment.user_email,
-              }
-            : m
-        )
-      );
-
-      setUnassignedUsers(
-        unassignedUsers.filter((u) => u.id !== selectedUserId)
-      );
+      // Refresh unassigned users
+      const usersRes = await fetch(`/api/users/unassigned`);
+      if (usersRes.ok) {
+        const usersData = await usersRes.json();
+        setUnassignedUsers(usersData);
+      }
 
       toast.success("Cubicle assigned successfully");
       setModalOpen(false);

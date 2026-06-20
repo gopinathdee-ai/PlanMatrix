@@ -8,13 +8,15 @@ import { Edit2, Trash2 } from "lucide-react";
 
 interface Assignment {
   id: string;
-  user_email: string;
-  user_name: string;
+  email: string;
+  name: string;
   marker_number: string;
   building: string;
-  floor: string;
-  assigned_date: string;
+  floor_number: string;
+  assigned_at: string;
   source: string;
+  user_id: string;
+  marker_id: string;
 }
 
 interface Marker {
@@ -222,10 +224,10 @@ export default function AssignmentsPage() {
                   {assignments.map((assignment) => (
                     <tr key={assignment.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 text-sm text-gray-900 font-medium">
-                        {assignment.user_email}
+                        {assignment.email}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-700">
-                        {assignment.user_name}
+                        {assignment.name}
                       </td>
                       <td className="px-6 py-4 text-sm font-semibold text-gray-900">
                         {assignment.marker_number}
@@ -234,10 +236,10 @@ export default function AssignmentsPage() {
                         {assignment.building}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-700">
-                        {assignment.floor}
+                        {assignment.floor_number}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-700">
-                        {new Date(assignment.assigned_date).toLocaleDateString()}
+                        {new Date(assignment.assigned_at).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">

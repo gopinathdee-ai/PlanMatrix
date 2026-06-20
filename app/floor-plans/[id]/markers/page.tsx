@@ -41,6 +41,7 @@ export default function MarkerPlacementPage({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [confirmDeleteMarker, setConfirmDeleteMarker] = useState<string | null>(null);
+  const renderTaskRef = useRef<any>(null);
 
   useEffect(() => {
     async function loadFloorPlan() {
@@ -84,6 +85,12 @@ export default function MarkerPlacementPage({
     let cancelled = false;
 
     async function renderPDF() {
+      // Cancel previous render if one is in progress
+      if (renderTaskRef.current) {
+        renderTaskRef.current.cancel();
+        renderTaskRef.current = null;
+      }
+
       // Wait for canvas to be mounted (up to 500ms)
       let attempts = 0;
       const maxAttempts = 50;
@@ -111,9 +118,15 @@ export default function MarkerPlacementPage({
           viewport: viewport,
         };
 
-        await page.render(renderContext).promise;
-      } catch (error) {
-        console.error("Error rendering PDF:", error);
+        const task = page.render(renderContext);
+        renderTaskRef.current = task;
+
+        await task.promise;
+        renderTaskRef.current = null;
+      } catch (error: any) {
+        if (error?.name !== "RenderingCancelledException") {
+          console.error("Error rendering PDF:", error);
+        }
       }
     }
 
@@ -121,6 +134,10 @@ export default function MarkerPlacementPage({
 
     return () => {
       cancelled = true;
+      if (renderTaskRef.current) {
+        renderTaskRef.current.cancel();
+        renderTaskRef.current = null;
+      }
     };
   }, [pdfDoc, zoom]);
 
@@ -350,11 +367,20 @@ export default function MarkerPlacementPage({
                     top: `${(marker.pixel_y * zoom) / 100}px`,
                   }}
                 >
-                  <div className="w-6 h-6 rounded-full border-2 border-blue-500 bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-700">
-                    {marker.marker_number}
+                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-bold overflow-hidden ${
+                    marker.assigned_user_name
+                      ? "border-red-500 bg-red-100 text-red-700"
+                      : "border-blue-500 bg-blue-100 text-blue-700"
+                  }`}
+                  style={{ fontFamily: "var(--font-roboto-condensed)" }}>
+                    <span className="text-center px-0.5 line-clamp-1 text-[9px] font-semibold">
+                      {marker.assigned_user_name
+                        ? marker.assigned_user_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+                        : marker.marker_number}
+                    </span>
                   </div>
                   <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap">
-                    ({Math.round(marker.pixel_x)}, {Math.round(marker.pixel_y)})
+                    {marker.assigned_user_name ? `${marker.assigned_user_name} (${marker.marker_number})` : `${marker.marker_number} - unassigned`}
                   </div>
                 </div>
               ))}

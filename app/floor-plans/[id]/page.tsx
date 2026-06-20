@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, use } from "react";
 import Link from "next/link";
-import { ChevronLeft, ZoomIn, ZoomOut, Edit2 } from "lucide-react";
+import { ChevronLeft, ZoomIn, ZoomOut, Edit2, Users } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { toast } from "sonner";
 
@@ -37,6 +37,7 @@ export default function FloorPlanViewer({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [loading, setLoading] = useState(true);
+  const renderTaskRef = useRef<any>(null);
 
   useEffect(() => {
     async function loadFloorPlan() {
@@ -75,13 +76,17 @@ export default function FloorPlanViewer({
   }, [params.id]);
 
   useEffect(() => {
-    console.log("useEffect running, pdfDoc:", !!pdfDoc, "canvasRef.current:", !!canvasRef.current);
-
     if (!pdfDoc) return;
 
     let cancelled = false;
 
     const renderPDF = async () => {
+      // Cancel previous render if one is in progress
+      if (renderTaskRef.current) {
+        renderTaskRef.current.cancel();
+        renderTaskRef.current = null;
+      }
+
       // Wait for canvas to be mounted (up to 500ms)
       let attempts = 0;
       const maxAttempts = 50;
@@ -90,14 +95,9 @@ export default function FloorPlanViewer({
         attempts++;
       }
 
-      if (cancelled || !canvasRef.current) {
-        console.log("Canvas not available after", attempts * 10, "ms");
-        return;
-      }
+      if (cancelled || !canvasRef.current) return;
 
       try {
-        console.log("Starting PDF render");
-
         const page = await pdfDoc.getPage(1);
         const scale = zoom / 100;
         const viewport = page.getViewport({ scale });
@@ -114,11 +114,17 @@ export default function FloorPlanViewer({
           viewport: viewport,
         };
 
-        console.log("Rendering PDF at", viewport.width, "x", viewport.height);
-        await page.render(renderContext).promise;
-        console.log("PDF render complete");
-      } catch (error) {
-        console.error("Error rendering PDF:", error);
+        // Store render task so we can cancel it if needed
+        const task = page.render(renderContext);
+        renderTaskRef.current = task;
+
+        await task.promise;
+        renderTaskRef.current = null;
+      } catch (error: any) {
+        // Ignore cancellation errors
+        if (error?.name !== "RenderingCancelledException") {
+          console.error("Error rendering PDF:", error);
+        }
       }
     };
 
@@ -126,6 +132,10 @@ export default function FloorPlanViewer({
 
     return () => {
       cancelled = true;
+      if (renderTaskRef.current) {
+        renderTaskRef.current.cancel();
+        renderTaskRef.current = null;
+      }
     };
   }, [pdfDoc, zoom]);
 
@@ -190,12 +200,20 @@ export default function FloorPlanViewer({
             <p className="text-sm text-gray-500">{markers.length} cubicles</p>
           </div>
         </div>
-        <Link href={`/floor-plans/${params.id}/markers`}>
-          <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-semibold shadow-md hover:shadow-lg transition-all">
-            <Edit2 className="w-4 h-4" />
-            Manage Markers
-          </button>
-        </Link>
+        <div className="flex gap-3">
+          <Link href={`/floor-plans/${params.id}/assign`}>
+            <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-lg font-semibold shadow-md hover:shadow-lg transition-all">
+              <Users className="w-4 h-4" />
+              Assign Users
+            </button>
+          </Link>
+          <Link href={`/floor-plans/${params.id}/markers`}>
+            <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-semibold shadow-md hover:shadow-lg transition-all">
+              <Edit2 className="w-4 h-4" />
+              Manage Markers
+            </button>
+          </Link>
+        </div>
       </div>
 
       <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-2">
@@ -251,17 +269,22 @@ export default function FloorPlanViewer({
               }}
             >
               <div
-                className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold ${
+                className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold overflow-hidden ${
                   marker.assigned_user_name
                     ? "border-red-500 bg-red-100 text-red-700"
                     : "border-green-500 bg-green-100 text-green-700"
                 }`}
+                style={{ fontFamily: "var(--font-roboto-condensed)" }}
               >
-                {marker.marker_number}
+                <span className="text-center px-1 line-clamp-1 text-[10px] font-semibold">
+                  {marker.assigned_user_name
+                    ? marker.assigned_user_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+                    : marker.marker_number}
+                </span>
               </div>
               {marker.assigned_user_name && (
                 <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap">
-                  {marker.assigned_user_name}
+                  {marker.marker_number}
                 </div>
               )}
             </div>

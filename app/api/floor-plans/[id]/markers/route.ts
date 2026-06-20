@@ -16,20 +16,42 @@ export async function GET(
 
   try {
     const floorPlanId = params.id;
+
+    // Get all markers
     const markers = await db("markers")
       .where("floor_plan_id", floorPlanId)
-      .leftJoin(
-        "assignments",
-        "markers.id = assignments.marker_id"
-      )
-      .leftJoin("users", "assignments.user_id = users.id")
       .select(
-        "markers.*",
-        "users.email as assigned_user_email",
-        "users.name as assigned_user_name"
+        "id",
+        "marker_number",
+        "pixel_x",
+        "pixel_y",
+        "pdf_page_number",
+        "created_at"
       );
 
-    return NextResponse.json(markers);
+    // Get all assignments
+    const assignments = await db("assignments").select("marker_id", "user_id");
+
+    // Get all users
+    const users = await db("users").select("id", "email", "name");
+
+    // Build lookup maps
+    const userMap = new Map(users.map((u: any) => [u.id, u]));
+    const assignmentMap = new Map(assignments.map((a: any) => [a.marker_id, a.user_id]));
+
+    // Enrich markers with assignment info
+    const enriched = markers.map((m: any) => {
+      const userId = assignmentMap.get(m.id);
+      const user = userId ? userMap.get(userId) : null;
+
+      return {
+        ...m,
+        assigned_user_name: user?.name || null,
+        assigned_user_email: user?.email || null,
+      };
+    });
+
+    return NextResponse.json(enriched);
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message },
