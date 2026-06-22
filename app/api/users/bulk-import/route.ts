@@ -84,7 +84,6 @@ export async function POST(req: NextRequest) {
           name,
           department: department || null,
           status: "active",
-          is_system_user: 0,
         });
 
         existingEmailSet.add(email);

@@ -13,7 +13,6 @@ export async function GET() {
   try {
     // Get all users
     const allUsers = await db("users")
-      .where("is_system_user", 0)
       .where("status", "active")
       .select("id", "email", "name");
 

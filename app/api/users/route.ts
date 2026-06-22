@@ -13,7 +13,6 @@ export async function GET() {
   try {
     const users = await db("users")
       .whereNotNull("email")
-      .where("is_system_user", 0)
       .orderBy("created_at", "desc")
       .select("id", "email", "name", "department", "status", "is_it_admin", "created_at");
 
@@ -66,7 +65,6 @@ export async function POST(req: NextRequest) {
       name,
       department: department || null,
       status: "active",
-      is_system_user: 0,
     });
 
     return NextResponse.json(
