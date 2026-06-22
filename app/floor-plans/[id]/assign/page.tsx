@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronLeft, ZoomIn, ZoomOut } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { toast } from "sonner";
+import { getMarkerSize, getInitials } from "@/lib/markerDisplay";
 
 interface FloorPlan {
   id: string;
@@ -406,35 +407,45 @@ export default function ManualAssignmentPage({
             }}
           />
 
-          {markers.map((marker) => (
-            <div
-              key={marker.id}
-              className="absolute w-8 h-8 -translate-x-1/2 -translate-y-1/2 group cursor-pointer"
-              style={{
-                left: `${(marker.pixel_x * zoom) / 100}px`,
-                top: `${(marker.pixel_y * zoom) / 100}px`,
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleMarkerClick(marker);
-              }}
-            >
+          {markers.map((marker) => {
+            const { diameter, fontSize } = getMarkerSize(32, zoom);
+            return (
               <div
-                className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold transition-all hover:scale-125 ${
-                  marker.assigned_user_name
-                    ? "border-red-500 bg-red-100 text-red-700"
-                    : "border-green-500 bg-green-100 text-green-700"
-                }`}
+                key={marker.id}
+                className="absolute -translate-x-1/2 -translate-y-1/2 group cursor-pointer"
+                style={{
+                  left: `${(marker.pixel_x * zoom) / 100}px`,
+                  top: `${(marker.pixel_y * zoom) / 100}px`,
+                  width: `${diameter}px`,
+                  height: `${diameter}px`,
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleMarkerClick(marker);
+                }}
               >
-                {marker.marker_number}
-              </div>
-              {marker.assigned_user_name && (
-                <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap z-40">
-                  {marker.assigned_user_name}
+                <div
+                  className={`rounded-full border-2 flex items-center justify-center font-bold transition-all hover:scale-125 w-full h-full overflow-hidden ${
+                    marker.assigned_user_name
+                      ? "border-red-500 bg-red-100 text-red-700"
+                      : "border-green-500 bg-green-100 text-green-700"
+                  }`}
+                  style={{ fontFamily: "var(--font-roboto-condensed)", fontSize: `${fontSize}px` }}
+                >
+                  <span className="text-center px-1 line-clamp-1">
+                    {marker.assigned_user_name
+                      ? getInitials(marker.assigned_user_name)
+                      : marker.marker_number}
+                  </span>
                 </div>
-              )}
-            </div>
-          ))}
+                {marker.assigned_user_name && (
+                  <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap z-40">
+                    {marker.assigned_user_name}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronLeft, ZoomIn, ZoomOut, Edit2, Users } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { toast } from "sonner";
+import { getMarkerSize, getInitials } from "@/lib/markerDisplay";
 
 interface FloorPlan {
   id: string;
@@ -201,6 +202,12 @@ export default function FloorPlanViewer({
           </div>
         </div>
         <div className="flex gap-3">
+          <Link href={`/floor-plans/${params.id}/print`}>
+            <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white rounded-lg font-semibold shadow-md hover:shadow-lg transition-all">
+              <Edit2 className="w-4 h-4" />
+              Print
+            </button>
+          </Link>
           <Link href={`/floor-plans/${params.id}/assign`}>
             <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-lg font-semibold shadow-md hover:shadow-lg transition-all">
               <Users className="w-4 h-4" />
@@ -259,36 +266,41 @@ export default function FloorPlanViewer({
             }}
           />
 
-          {markers.map((marker) => (
-            <div
-              key={marker.id}
-              className="absolute w-8 h-8 -translate-x-1/2 -translate-y-1/2 group cursor-pointer"
-              style={{
-                left: `${(marker.pixel_x * zoom) / 100}px`,
-                top: `${(marker.pixel_y * zoom) / 100}px`,
-              }}
-            >
+          {markers.map((marker) => {
+            const { diameter, fontSize } = getMarkerSize(32, zoom);
+            return (
               <div
-                className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold overflow-hidden ${
-                  marker.assigned_user_name
-                    ? "border-red-500 bg-red-100 text-red-700"
-                    : "border-green-500 bg-green-100 text-green-700"
-                }`}
-                style={{ fontFamily: "var(--font-roboto-condensed)" }}
+                key={marker.id}
+                className="absolute -translate-x-1/2 -translate-y-1/2 group cursor-pointer"
+                style={{
+                  left: `${(marker.pixel_x * zoom) / 100}px`,
+                  top: `${(marker.pixel_y * zoom) / 100}px`,
+                  width: `${diameter}px`,
+                  height: `${diameter}px`,
+                }}
               >
-                <span className="text-center px-1 line-clamp-1 text-[10px] font-semibold">
-                  {marker.assigned_user_name
-                    ? marker.assigned_user_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-                    : marker.marker_number}
-                </span>
-              </div>
-              {marker.assigned_user_name && (
-                <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap">
-                  {marker.marker_number}
+                <div
+                  className={`rounded-full border-2 flex items-center justify-center font-bold overflow-hidden w-full h-full ${
+                    marker.assigned_user_name
+                      ? "border-red-500 bg-red-100 text-red-700"
+                      : "border-green-500 bg-green-100 text-green-700"
+                  }`}
+                  style={{ fontFamily: "var(--font-roboto-condensed)", fontSize: `${fontSize}px` }}
+                >
+                  <span className="text-center px-1 line-clamp-1">
+                    {marker.assigned_user_name
+                      ? getInitials(marker.assigned_user_name)
+                      : marker.marker_number}
+                  </span>
                 </div>
-              )}
-            </div>
-          ))}
+                {marker.assigned_user_name && (
+                  <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap">
+                    {marker.marker_number}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

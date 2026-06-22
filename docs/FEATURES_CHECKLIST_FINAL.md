@@ -14,7 +14,7 @@
 - ❌ Nunito/Montserrat/Ubuntu → ✅ Kodchasan
 - ❌ Connection strings → ✅ Individual env variables (DATABASE_HOST, DATABASE_USER, etc.)
 
-## What's Completed (As of June 20, 2026)
+## What's Completed (As of June 21, 2026)
 
 ✅ **Infrastructure:**
 - SQL Server database with Knex migrations
@@ -25,7 +25,7 @@
 
 ✅ **Tech Stack:**
 - Next.js 16.2.9 with TypeScript
-- Tailwind CSS with Kodchasan font
+- Tailwind CSS with Kodchasan font + Roboto Condensed (for print/dense text)
 - Knex.js for migrations & queries
 - NextAuth for session management
 - Sonner for toast notifications
@@ -38,12 +38,22 @@
 - Delete with cascading deletes
 - Duplicate building/floor prevention
 
+✅ **PDF Viewer & Marker Display:**
+- pdfjs-dist PDF rendering with zoom
+- Zoom-responsive markers (circles + text scale with zoom, not fixed size)
+- Marker display with initials for assigned users
+- Condensed font for narrow labels (Roboto Condensed)
+- Consistent initials extraction (`lib/markerDisplay.ts`)
+
+✅ **Core Workflow (Manual + Bulk):**
+- User management (add, bulk import, deactivate/delete)
+- Cubicle assignments (manual & bulk)
+- Cubicle reassignment & removal
+- Assignment history logging
+
 🔄 **In Progress:**
-- PDF viewer with pdfjs-dist
-- Marker placement with fabric.js
-- User management (manual & bulk)
-- Assignment management
-- Audit trail
+- Print Floor Plan feature (A3 layout, dynamic marker sizing, legend table)
+- Audit trail/history page
 - Dashboard metrics
 
 ---
@@ -78,8 +88,8 @@
 ### PDF Viewer & Marker Placement
 - [x] PDF viewer component (pdfjs-dist)
 - [x] Display PDF on canvas
-- [x] Zoom in/out functionality
-- [x] Pan across PDF
+- [x] Zoom in/out functionality (25%-200%)
+- [x] Pan across PDF (right-click drag)
 - [x] Interactive canvas overlay
 - [x] Click on PDF to place marker
 - [x] Name marker (e.g., "1509")
@@ -89,6 +99,9 @@
 - [x] Delete marker
 - [x] Color-coded markers (green=empty, red=occupied)
 - [x] Marker tooltip showing occupant name
+- [x] Zoom-responsive markers (size + text scales with zoom)
+- [x] Initials display for assigned markers (e.g., "BD" for "Bhavani Devi")
+- [x] Condensed font for narrow labels (Roboto Condensed)
 
 ### User Management
 - [x] Manual: Add user via form (email, name, department)
@@ -135,6 +148,18 @@
 - [x] Reassign: Remove from old + Assign to new
 - [x] History logged as "reassign" action
 - [x] Toast notifications
+
+### Print Floor Plan
+- [x] Print page (dedicated route `/floor-plans/[id]/print`)
+- [x] High-resolution PDF rendering (150 DPI for crisp output)
+- [x] Dynamic per-marker circle sizing (based on nearest-neighbor distance)
+- [x] Marker number display in circles (always fits, always unique)
+- [x] Cubicle legend table with full assigned names
+- [x] A3 landscape paper size configuration
+- [x] Legend on separate printed page (break-before: page)
+- [x] Unassigned cubicles marked as "— unassigned —" in legend
+- [x] Print instruction note (Actual Size / 100% scale)
+- [x] Print button on floor plan viewer page
 
 ### Audit Trail & History
 - [ ] All assignment changes logged to assignment_history
@@ -417,9 +442,11 @@
 | Floor Plan Management | 1 | ✅ Complete | MUST |
 | PDF Viewer | 1 | ✅ Complete | MUST |
 | Marker Placement | 1 | ✅ Complete | MUST |
+| Marker Display (Zoom-Responsive) | 1 | ✅ Complete | MUST |
 | User Management | 1 | ✅ Complete | MUST |
 | Assignments (Manual) | 1 | ✅ Complete | MUST |
 | Assignments (Bulk) | 1 | ✅ Complete | MUST |
+| Print Floor Plan | 1 | ✅ Complete | SHOULD |
 | Dashboard | 1 | Planned | SHOULD |
 | History/Audit | 1 | Planned | MUST |
 | IT Admin Settings | 1 | Planned | SHOULD |

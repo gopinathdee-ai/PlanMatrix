@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronLeft, Plus, Trash2, Edit2 } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { toast } from "sonner";
+import { getMarkerSize, getInitials } from "@/lib/markerDisplay";
 
 interface FloorPlan {
   id: string;
@@ -358,32 +359,37 @@ export default function MarkerPlacementPage({
                 }}
               />
 
-              {markers.map((marker) => (
-                <div
-                  key={marker.id}
-                  className="absolute w-6 h-6 -translate-x-1/2 -translate-y-1/2 group"
-                  style={{
-                    left: `${(marker.pixel_x * zoom) / 100}px`,
-                    top: `${(marker.pixel_y * zoom) / 100}px`,
-                  }}
-                >
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-bold overflow-hidden ${
-                    marker.assigned_user_name
-                      ? "border-red-500 bg-red-100 text-red-700"
-                      : "border-blue-500 bg-blue-100 text-blue-700"
-                  }`}
-                  style={{ fontFamily: "var(--font-roboto-condensed)" }}>
-                    <span className="text-center px-0.5 line-clamp-1 text-[9px] font-semibold">
-                      {marker.assigned_user_name
-                        ? marker.assigned_user_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-                        : marker.marker_number}
-                    </span>
+              {markers.map((marker) => {
+                const { diameter, fontSize } = getMarkerSize(24, zoom);
+                return (
+                  <div
+                    key={marker.id}
+                    className="absolute -translate-x-1/2 -translate-y-1/2 group"
+                    style={{
+                      left: `${(marker.pixel_x * zoom) / 100}px`,
+                      top: `${(marker.pixel_y * zoom) / 100}px`,
+                      width: `${diameter}px`,
+                      height: `${diameter}px`,
+                    }}
+                  >
+                    <div className={`rounded-full border-2 flex items-center justify-center font-bold overflow-hidden w-full h-full ${
+                      marker.assigned_user_name
+                        ? "border-red-500 bg-red-100 text-red-700"
+                        : "border-blue-500 bg-blue-100 text-blue-700"
+                    }`}
+                    style={{ fontFamily: "var(--font-roboto-condensed)", fontSize: `${fontSize}px` }}>
+                      <span className="text-center px-0.5 line-clamp-1">
+                        {marker.assigned_user_name
+                          ? getInitials(marker.assigned_user_name)
+                          : marker.marker_number}
+                      </span>
+                    </div>
+                    <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap">
+                      {marker.assigned_user_name ? `${marker.assigned_user_name} (${marker.marker_number})` : `${marker.marker_number} - unassigned`}
+                    </div>
                   </div>
-                  <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap">
-                    {marker.assigned_user_name ? `${marker.assigned_user_name} (${marker.marker_number})` : `${marker.marker_number} - unassigned`}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

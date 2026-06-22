@@ -88,3 +88,46 @@ code {
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 #f1f5f9;
 }
+
+/* Print styles for floor plan printing */
+@media print {
+  @page {
+    size: A3 landscape;
+    margin: 10mm;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  body,
+  .print-page {
+    margin: 0;
+    background: white;
+  }
+
+  .legend-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10pt;
+  }
+
+  .legend-table th,
+  .legend-table td {
+    border: 1px solid #000;
+    padding: 4pt 6pt;
+    text-align: left;
+  }
+
+  .legend-table thead {
+    display: table-header-group;
+  }
+
+  .legend-table tr {
+    break-inside: avoid;
+  }
+
+  .legend-container {
+    break-before: page;
+  }
+}
