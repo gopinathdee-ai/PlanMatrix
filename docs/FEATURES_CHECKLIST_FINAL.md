@@ -172,14 +172,17 @@
 
 ### Dashboard
 - [x] Overview page structure in place
-- [ ] Overview page with key metrics:
-  - [ ] Total floor plans
-  - [ ] Total cubicles (markers)
-  - [ ] Occupied cubicles
-  - [ ] Available cubicles
-  - [ ] Occupancy rate (%)
-  - [ ] Total users
-- [ ] Stats update in real-time (or on page load)
+- [x] Overview page with key metrics:
+  - [x] Total floor plans
+  - [x] Total cubicles (markers)
+  - [x] Occupied cubicles
+  - [x] Available cubicles
+  - [x] Occupancy rate (%)
+  - [x] Total users
+- [x] Stats update on page load
+- [x] Visual cards with gradient backgrounds and icons
+- [x] Occupancy progress bar
+- [x] System overview summary with calculations
 
 ### IT Admin Features
 - [ ] Settings panel (admin/settings)
@@ -303,7 +306,7 @@
 - [ ] Can assign users to cubicles (manual + bulk)
 - [ ] Can reassign/remove assignments
 - [ ] Assignment history logged
-- [ ] Dashboard shows occupancy stats
+- [x] Dashboard shows occupancy stats
 - [ ] IT Admin can configure PDF storage path
 - [x] No critical bugs (so far)
 - [x] Responsive UI
@@ -447,7 +450,7 @@
 | Assignments (Manual) | 1 | ✅ Complete | MUST |
 | Assignments (Bulk) | 1 | ✅ Complete | MUST |
 | Print Floor Plan | 1 | ✅ Complete | SHOULD |
-| Dashboard | 1 | Planned | SHOULD |
+| Dashboard | 1 | ✅ Complete | SHOULD |
 | History/Audit | 1 | Planned | MUST |
 | IT Admin Settings | 1 | Planned | SHOULD |
 | Error Handling | 1 | ✅ Complete | MUST |
