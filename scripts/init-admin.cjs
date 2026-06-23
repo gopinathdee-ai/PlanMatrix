@@ -1,5 +1,5 @@
 const sql = require('mssql');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 require('dotenv').config({ path: '.env.local' });
 
