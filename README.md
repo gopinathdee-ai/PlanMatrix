@@ -4,42 +4,35 @@ Real floor plan-based cubicle management system with bulk operations.
 
 ## Quick Start
 
-### 1. Install Dependencies
-```bash
-npm install
-```
+**For detailed setup instructions, see [docs/Setup.md](./docs/Setup.md)**
 
-### 2. Configure Environment
-Edit `.env.local` with your SQL Server connection details:
-```env
-DATABASE_URL="Server=localhost;Database=floorplan_db;User Id=sa;Password=YourPassword123;Encrypt=false;"
-NEXTAUTH_SECRET="generate-with-openssl-rand-base64-32"
-NEXTAUTH_URL="http://localhost:3000"
-ADMIN_USERNAME="admin"
-ADMIN_PASSWORD="Password123"
-PDF_STORAGE_PATH="./public/floor-plans"
-```
+### Prerequisites
+- SQL Server 2019+
+- Node.js v18+
 
-Generate NEXTAUTH_SECRET:
-```bash
-openssl rand -base64 32
-```
+### Quick Setup (5 minutes)
 
-### 3. Setup Database
-```bash
-# Generate migrations
-npm run db:generate
+1. Clone and install:
+   ```bash
+   git clone https://github.com/gopinathdee-ai/PlanMatrix.git
+   cd PlanMatrix
+   npm install
+   ```
 
-# Push schema to SQL Server
-npm run db:push
-```
+2. Configure `.env.local` with your SQL Server credentials (see [docs/Setup.md](./docs/Setup.md#step-2-configure-environment-variables))
 
-### 4. Start Development
-```bash
-npm run dev
-```
+3. Setup database and migrations:
+   ```bash
+   npm run db:initialize
+   npm run db:migrate
+   ```
 
-Visit http://localhost:3000 → Login with `admin` / `Password123`
+4. Start development:
+   ```bash
+   npm run dev
+   ```
+
+5. Login at http://localhost:3000 with your admin credentials
 
 ## Project Structure
 
@@ -103,50 +96,21 @@ See [docs/FEATURES_CHECKLIST_FINAL.md](./docs/FEATURES_CHECKLIST_FINAL.md) for:
 
 ## Getting Started
 
-1. **Install dependencies**: 
-   ```bash
-   npm install
-   ```
-
-2. **Configure `.env.local`** with your SQL Server connection:
-   ```env
-   DATABASE_HOST=localhost
-   DATABASE_PORT=1433
-   DATABASE_NAME=floorplan_db
-   DATABASE_USER=sa
-   DATABASE_PASSWORD=YourPassword
-   NEXTAUTH_SECRET=<generate with: openssl rand -base64 32>
-   NEXTAUTH_URL=http://localhost:3000
-   PDF_STORAGE_PATH=./public/pdfs
-   ```
-
-3. **Ensure database exists** (create manually or via SQL Server Management Studio)
-
-4. **Start dev server**: 
-   ```bash
-   npm run dev
-   ```
-
-5. **Login** at http://localhost:3000 with:
-   - Username: `admin@planmatrix.local`
-   - Password: `Password123`
+Follow the complete setup guide in **[docs/Setup.md](./docs/Setup.md)** which includes:
+- Environment configuration
+- SQL Server database setup
+- Running migrations
+- Starting the development server
 
 ## Available Scripts
 
+For all available npm scripts and database commands, see [docs/Setup.md#available-npm-scripts](./docs/Setup.md#available-npm-scripts).
+
+Common scripts:
 ```bash
 npm run dev          # Start development server (port 3000)
 npm run build        # Build for production
-npm start            # Start production server
-npm run lint         # Run ESLint
-```
-
-## Database Setup
-
-Database tables are created automatically on first run via migrations in `db/migrations/`.
-
-To manually check database connection:
-```bash
-node -e "require('./lib/db').db('users').select('*').then(r => console.log(r))"
+npm run db:migrate   # Run database migrations
 ```
 
 ## Technology Stack
@@ -194,31 +158,13 @@ See the `docs/` directory for complete documentation:
 
 ## Troubleshooting
 
-**Q: "Cannot connect to SQL Server"**
-A: 
-- Verify SQL Server is running (`services.msc` on Windows)
-- Check `DATABASE_HOST`, `DATABASE_USER`, `DATABASE_PASSWORD` in `.env.local`
-- Ensure database exists and is accessible
-- On Windows: SQL Server should be set to TCP/IP enabled
+For detailed troubleshooting steps, see [docs/Setup.md#troubleshooting](./docs/Setup.md#troubleshooting).
 
-**Q: "Database doesn't exist"**
-A:
-- Manually create database in SQL Server Management Studio
-- Database name should match `DATABASE_NAME` in `.env.local`
-- Run migrations automatically on first connection
-
-**Q: "Users fetch error" or similar API errors**
-A:
-- Check browser console for specific error message
-- Verify all database tables exist
-- Check `.env.local` credentials are correct
-- Restart dev server: `npm run dev`
-
-**Q: Port 3000 already in use?**
-A: Run on different port: `npm run dev -- -p 3001`
-
-**Q: Mobile view looks broken**
-A: Clear browser cache and hard refresh (Ctrl+Shift+R or Cmd+Shift+R)
+Common issues:
+- **SQL Server connection errors** → Check credentials and TCP/IP settings
+- **Database doesn't exist** → Run `npm run db:initialize`
+- **API errors** → Verify `.env.local` is configured and migrations ran
+- **Port already in use** → Use `npm run dev -- -p 3001`
 
 ## Support & Contributing
 
