@@ -164,16 +164,16 @@ export default function AssignmentsPage() {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex justify-between items-center mb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-6 mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900">Assignments</h1>
-            <p className="text-gray-600 mt-2">
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">Assignments</h1>
+            <p className="text-gray-600 mt-2 text-sm sm:text-base">
               Manage user cubicle assignments
             </p>
           </div>
-          <Link href="/floor-plans">
-            <button className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-semibold shadow-md hover:shadow-lg transition-all">
+          <Link href="/floor-plans" className="w-full sm:w-auto">
+            <button className="w-full sm:w-auto px-4 sm:px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-semibold shadow-md hover:shadow-lg transition-all">
               + New Assignment
             </button>
           </Link>
@@ -189,88 +189,136 @@ export default function AssignmentsPage() {
             </Link>
           </div>
         ) : (
-          <div className="card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200 bg-gray-50">
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      User Email
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      User Name
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      Marker
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      Building
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      Floor
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      Assigned Date
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      Source
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {assignments.map((assignment) => (
-                    <tr key={assignment.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 text-sm text-gray-900 font-medium">
-                        {assignment.email}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        {assignment.name}
-                      </td>
-                      <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-                        {assignment.marker_number}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        {assignment.building}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        {assignment.floor_number}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        {new Date(assignment.assigned_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
-                          {assignment.source}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => openReassignModal(assignment)}
-                            className="p-2 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors"
-                            title="Edit assignment"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => setConfirmDelete(assignment.id)}
-                            disabled={deleting === assignment.id}
-                            className="p-2 hover:bg-red-100 text-red-600 rounded-lg transition-colors disabled:opacity-50"
-                            title="Remove assignment"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block card overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200 bg-gray-50">
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        User Name
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Building
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Floor
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Assigned Cubicle
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Assigned Date
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Source
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Actions
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {assignments.map((assignment) => (
+                      <tr key={assignment.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 text-sm text-gray-700">
+                          {assignment.name}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-700">
+                          {assignment.building}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-700">
+                          {assignment.floor_number}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-semibold text-gray-900">
+                          {assignment.marker_number}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-700">
+                          {new Date(assignment.assigned_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 text-sm">
+                          <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
+                            {assignment.source}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => openReassignModal(assignment)}
+                              className="p-2 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors"
+                              title="Edit assignment"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setConfirmDelete(assignment.id)}
+                              disabled={deleting === assignment.id}
+                              className="p-2 hover:bg-red-100 text-red-600 rounded-lg transition-colors disabled:opacity-50"
+                              title="Remove assignment"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+              {assignments.map((assignment) => (
+                <div key={assignment.id} className="card p-4">
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Name</p>
+                      <p className="text-sm font-medium text-gray-900">{assignment.name}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Building</p>
+                        <p className="text-sm text-gray-700">{assignment.building}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Floor</p>
+                        <p className="text-sm text-gray-700">{assignment.floor_number}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Assigned Cubicle</p>
+                        <p className="text-sm font-semibold text-gray-900">{assignment.marker_number}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Assigned Date</p>
+                        <p className="text-sm text-gray-700">{new Date(assignment.assigned_at).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        onClick={() => openReassignModal(assignment)}
+                        className="flex-1 p-2 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors font-medium text-sm"
+                      >
+                        <Edit2 className="w-4 h-4 inline mr-2" />
+                        Reassign
+                      </button>
+                      <button
+                        onClick={() => setConfirmDelete(assignment.id)}
+                        disabled={deleting === assignment.id}
+                        className="flex-1 p-2 hover:bg-red-100 text-red-600 rounded-lg transition-colors font-medium text-sm disabled:opacity-50"
+                      >
+                        <Trash2 className="w-4 h-4 inline mr-2" />
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
 
         {confirmDelete && (

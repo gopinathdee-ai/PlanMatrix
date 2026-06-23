@@ -33,3 +33,17 @@ export function getInitials(name: string): string {
     .toUpperCase()
     .slice(0, 2);
 }
+
+/**
+ * Get abbreviated name: first initial + last name
+ * @param name Full name (e.g., "John Duraswamy" → "J Duraswamy")
+ * @returns Abbreviated name
+ */
+export function getAbbreviatedName(name: string): string {
+  if (!name) return "";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  const firstInitial = parts[0][0].toUpperCase();
+  const lastName = parts[parts.length - 1];
+  return `${firstInitial} ${lastName}`;
+}

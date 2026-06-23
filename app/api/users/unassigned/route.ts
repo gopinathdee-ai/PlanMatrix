@@ -14,6 +14,7 @@ export async function GET() {
     // Get all users
     const allUsers = await db("users")
       .where("status", "active")
+      .where("is_system_user", 0)
       .select("id", "email", "name");
 
     // Get assigned user IDs

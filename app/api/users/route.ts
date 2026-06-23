@@ -12,9 +12,21 @@ export async function GET() {
 
   try {
     const users = await db("users")
-      .whereNotNull("email")
-      .orderBy("created_at", "desc")
-      .select("id", "email", "name", "department", "status", "is_it_admin", "created_at");
+      .leftJoin("assignments", "users.id = assignments.user_id")
+      .leftJoin("markers", "assignments.marker_id = markers.id")
+      .where("users.is_system_user", 0)
+      .whereNotNull("users.email")
+      .orderBy("users.created_at", "desc")
+      .select(
+        "users.id",
+        "users.email",
+        "users.name",
+        "users.department",
+        "users.status",
+        "users.is_it_admin",
+        "users.created_at",
+        "markers.marker_number as assigned_cubicle"
+      );
 
     console.log("Users fetched:", users.length, "records");
     console.log("First user:", users[0]);

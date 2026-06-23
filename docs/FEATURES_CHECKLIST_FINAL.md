@@ -14,7 +14,7 @@
 - ❌ Nunito/Montserrat/Ubuntu → ✅ Kodchasan
 - ❌ Connection strings → ✅ Individual env variables (DATABASE_HOST, DATABASE_USER, etc.)
 
-## What's Completed (As of June 21, 2026)
+## What's Completed (As of June 22, 2026)
 
 ✅ **Infrastructure:**
 - SQL Server database with Knex migrations
@@ -22,6 +22,7 @@
 - Modern login page with two-panel layout
 - Dashboard structure with navbar & logout
 - Environment configuration (.env.local)
+- Mobile-responsive navbar with hamburger menu
 
 ✅ **Tech Stack:**
 - Next.js 16.2.9 with TypeScript
@@ -51,10 +52,17 @@
 - Cubicle reassignment & removal
 - Assignment history logging
 
+✅ **Mobile Responsiveness:**
+- Navbar with hamburger menu on mobile
+- Users page with card-based mobile view and desktop table
+- Assignments page with card-based mobile view and desktop table
+- Floor Plans page with modal message on mobile ("Use Desktop...")
+- All forms and inputs responsive to mobile screens
+- Consistent padding and font sizing across breakpoints
+
 🔄 **In Progress:**
-- Print Floor Plan feature (A3 layout, dynamic marker sizing, legend table)
 - Audit trail/history page
-- Dashboard metrics
+- IT Admin settings panel
 
 ---
 
@@ -112,8 +120,9 @@
 - [x] CSV validation (required fields, duplicate email check)
 - [x] Error reporting per row
 - [x] Success summary (created X users, Y errors)
-- [x] List all users with stats
-- [x] View user's current assignment
+- [x] List all users with stats (mobile card view & desktop table)
+- [x] View user's current assignment (assigned_cubicle field)
+- [x] Show assigned cubicle in user list (joined with assignments & markers)
 - [ ] Search/filter users
 
 ### Cubicle Assignment (Manual)
@@ -125,6 +134,7 @@
 - [x] See immediate UI feedback (marker color change)
 - [x] Toast notification on success
 - [x] Assignment logged to history
+- [x] Visible in assignments list (mobile card view & desktop table)
 
 ### Cubicle Assignment (Bulk)
 - [x] Download assignment template (pre-filled with all markers)
@@ -193,11 +203,15 @@
 - [ ] Future: Enable/disable users, view system health
 
 ### UI & UX
-- [x] Responsive design (desktop + mobile ready)
+- [x] Responsive design (desktop + mobile fully responsive)
 - [x] Tailwind CSS styling
-- [ ] Modern components (shadcn/ui where applicable)
-- [ ] Lucide icons throughout
-- [x] Navbar with logout button
+- [x] Mobile-specific layouts for Users, Assignments, Floor Plans
+- [x] Mobile hamburger menu in navbar
+- [x] Card-based views for mobile (Users, Assignments)
+- [x] Modal messages for mobile UX (Floor Plans view hint)
+- [x] Modern components (shadcn/ui where applicable)
+- [x] Lucide icons throughout
+- [x] Navbar with logout button (mobile-responsive)
 - [x] Toast notifications for errors (success/error)
 - [x] Loading states (disabled buttons)
 - [x] Error messages clear & actionable
@@ -206,14 +220,15 @@
 
 ### Navigation & Pages
 - [x] `/login` - Authentication
-- [ ] `/dashboard` - Overview & stats
-- [x] `/floor-plans` - List all floor plans
+- [x] `/dashboard` - Overview & stats (with occupancy metrics)
+- [x] `/floor-plans` - List all floor plans (mobile-responsive with modal message)
 - [x] `/floor-plans/upload` - Upload new floor plan
 - [x] `/floor-plans/[id]` - View floor plan PDF
+- [x] `/floor-plans/[id]/print` - Print floor plan (A3 layout with legend)
 - [x] `/floor-plans/[id]/markers` - Place/edit markers
 - [x] `/floor-plans/[id]/assign` - Assign users to markers
-- [x] `/users` - User management (manual + bulk)
-- [x] `/assignments` - View all assignments
+- [x] `/users` - User management (manual + bulk, mobile-responsive)
+- [x] `/assignments` - View all assignments (mobile-responsive with cards)
 - [ ] `/history` - Audit trail
 - [ ] `/admin/settings` - IT Admin settings (if IT Admin)
 - [ ] `/admin/logs` - IT Admin activity logs (if IT Admin)
@@ -300,16 +315,16 @@
 ## MVP Success Criteria (Go/No-Go)
 
 **MUST HAVE (Block Release If Missing):**
-- [ ] Can upload PDF floor plan
-- [ ] Can place markers on floor plan
-- [ ] Can add users (manual + bulk)
-- [ ] Can assign users to cubicles (manual + bulk)
-- [ ] Can reassign/remove assignments
-- [ ] Assignment history logged
+- [x] Can upload PDF floor plan
+- [x] Can place markers on floor plan
+- [x] Can add users (manual + bulk)
+- [x] Can assign users to cubicles (manual + bulk)
+- [x] Can reassign/remove assignments
+- [x] Assignment history logged
 - [x] Dashboard shows occupancy stats
 - [ ] IT Admin can configure PDF storage path
 - [x] No critical bugs (so far)
-- [x] Responsive UI
+- [x] Responsive UI (mobile + desktop)
 
 **SHOULD HAVE (Nice to Release With):**
 - ✅ Error messages are clear
@@ -446,15 +461,19 @@
 | PDF Viewer | 1 | ✅ Complete | MUST |
 | Marker Placement | 1 | ✅ Complete | MUST |
 | Marker Display (Zoom-Responsive) | 1 | ✅ Complete | MUST |
-| User Management | 1 | ✅ Complete | MUST |
-| Assignments (Manual) | 1 | ✅ Complete | MUST |
+| User Management | 1 | ✅ Complete (Mobile-Responsive) | MUST |
+| Assignments (Manual) | 1 | ✅ Complete (Mobile-Responsive) | MUST |
 | Assignments (Bulk) | 1 | ✅ Complete | MUST |
 | Print Floor Plan | 1 | ✅ Complete | SHOULD |
-| Dashboard | 1 | ✅ Complete | SHOULD |
+| Dashboard | 1 | ✅ Complete (with Metrics) | SHOULD |
+| Mobile Responsiveness | 1 | ✅ Complete (All Pages) | MUST |
+| Responsive Navbar | 1 | ✅ Complete (Hamburger Menu) | MUST |
+| Floor Plans Page (Mobile) | 1 | ✅ Complete (Modal Message) | SHOULD |
+| User API (Assigned Cubicle) | 1 | ✅ Complete (Joined Query) | MUST |
 | History/Audit | 1 | Planned | MUST |
 | IT Admin Settings | 1 | Planned | SHOULD |
 | Error Handling | 1 | ✅ Complete | MUST |
-| UI Polish | 1 | ✅ Complete | SHOULD |
+| UI Polish | 1 | ✅ Complete (Mobile + Desktop) | SHOULD |
 | Entra ID | 2 | Not Started | LATER |
 | Auto-Assign | 2 | Not Started | LATER |
 

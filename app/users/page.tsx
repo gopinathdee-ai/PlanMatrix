@@ -71,20 +71,20 @@ export default function UsersPage() {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex justify-between items-center mb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-6 mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900">Users</h1>
-            <p className="text-gray-600 mt-2">Manage workspace users and assignments</p>
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">Users</h1>
+            <p className="text-gray-600 mt-2 text-sm sm:text-base">Manage workspace users and assignments</p>
           </div>
-          <div className="flex gap-3">
-            <Link href="/users/bulk-import">
-              <button className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded-lg font-semibold shadow-md transition-all">
+          <div className="flex gap-3 w-full sm:w-auto">
+            <Link href="/users/bulk-import" className="flex-1 sm:flex-none">
+              <button className="w-full px-4 sm:px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded-lg font-semibold shadow-md transition-all">
                 📥 Bulk Import
               </button>
             </Link>
-            <Link href="/users/add">
-              <button className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-semibold shadow-md hover:shadow-lg transition-all">
+            <Link href="/users/add" className="flex-1 sm:flex-none">
+              <button className="w-full px-4 sm:px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-semibold shadow-md hover:shadow-lg transition-all">
                 + Add User
               </button>
             </Link>
@@ -106,67 +106,107 @@ export default function UsersPage() {
             </Link>
           </div>
         ) : (
-          <div className="card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200 bg-gray-50">
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      Email
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      Name
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      Department
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      Status
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      Assigned Cubicle
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {users.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 text-sm text-gray-900 font-medium">
-                        {user.email}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        {user.name}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        {user.department || "-"}
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className={`badge ${getStatusBadgeColor(user.status || "active")}`}>
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block card overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200 bg-gray-50">
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Email
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Name
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Department
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Status
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Assigned Cubicle
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {users.map((user) => (
+                      <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 text-sm text-gray-900 font-medium">
+                          {user.email}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-700">
+                          {user.name}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-700">
+                          {user.department || "-"}
+                        </td>
+                        <td className="px-6 py-4 text-sm">
+                          <span className={`badge ${getStatusBadgeColor(user.status || "active")}`}>
+                            {(user.status || "active").charAt(0).toUpperCase() +
+                              (user.status || "active").slice(1)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-700">
+                          {user.assigned_cubicle || "-"}
+                        </td>
+                        <td className="px-6 py-4 text-sm">
+                          <button
+                            onClick={() => setConfirmDelete(user.id)}
+                            disabled={deleting === user.id}
+                            className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg font-medium text-xs transition-colors disabled:opacity-50"
+                          >
+                            {deleting === user.id ? "Deleting..." : "Delete"}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+              {users.map((user) => (
+                <div key={user.id} className="card p-4 flex justify-between items-start gap-3">
+                  <div className="flex-1 space-y-2">
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Name</p>
+                      <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Status</p>
+                        <span className={`inline-block badge ${getStatusBadgeColor(user.status || "active")}`}>
                           {(user.status || "active").charAt(0).toUpperCase() +
                             (user.status || "active").slice(1)}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        {user.assigned_cubicle || "-"}
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        <button
-                          onClick={() => setConfirmDelete(user.id)}
-                          disabled={deleting === user.id}
-                          className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg font-medium text-xs transition-colors disabled:opacity-50"
-                        >
-                          {deleting === user.id ? "Deleting..." : "Delete"}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Assigned Cubicle</p>
+                        <p className="text-sm text-gray-700">{user.assigned_cubicle || "-"}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setConfirmDelete(user.id)}
+                    disabled={deleting === user.id}
+                    className="flex-shrink-0 p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                    aria-label="Delete user"
+                  >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
             </div>
-          </div>
+          </>
         )}
 
         {confirmDelete && (

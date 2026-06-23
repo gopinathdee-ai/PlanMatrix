@@ -6,6 +6,7 @@ import { ChevronLeft, Printer } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { toast } from "sonner";
 import { computeMarkerSizes } from "@/lib/markerSizing";
+import { getAbbreviatedName } from "@/lib/markerDisplay";
 
 interface FloorPlan {
   id: string;
@@ -39,6 +40,8 @@ export default function PrintFloorPlanPage({
   const [pdfDoc, setPdfDoc] = useState<any>(null);
   const [printScale, setPrintScale] = useState(1);
   const renderTaskRef = useRef<any>(null);
+  const [showPrintOptions, setShowPrintOptions] = useState(false);
+  const floorPlanContainerRef = useRef<HTMLDivElement>(null);
 
   // Load floor plan, markers, and PDF
   useEffect(() => {
@@ -154,12 +157,6 @@ export default function PrintFloorPlanPage({
     );
   }
 
-  // Sort markers by number for legend
-  const sortedMarkers = [...markers].sort((a, b) => {
-    const aNum = parseInt(a.marker_number) || 0;
-    const bNum = parseInt(b.marker_number) || 0;
-    return aNum - bNum;
-  });
 
   // Determine landscape vs portrait
   const isLandscape = floorPlan
@@ -181,26 +178,6 @@ export default function PrintFloorPlanPage({
             margin: 0;
             background: white;
           }
-          .legend-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 10pt;
-          }
-          .legend-table th,
-          .legend-table td {
-            border: 1px solid #000;
-            padding: 4pt 6pt;
-            text-align: left;
-          }
-          .legend-table thead {
-            display: table-header-group;
-          }
-          .legend-table tr {
-            break-inside: avoid;
-          }
-          .legend-container {
-            break-before: page;
-          }
         }
       `}</style>
 
@@ -218,7 +195,7 @@ export default function PrintFloorPlanPage({
               </p>
             </div>
             <button
-              onClick={() => window.print()}
+              onClick={() => setShowPrintOptions(true)}
               className="no-print flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold shadow-md transition-all"
             >
               <Printer className="w-5 h-5" />
@@ -234,7 +211,7 @@ export default function PrintFloorPlanPage({
         </div>
 
         {/* Floor plan canvas with markers */}
-        <div className="bg-white border-2 border-gray-300 rounded-lg p-4 mb-8 overflow-auto">
+        <div ref={floorPlanContainerRef} className="bg-white border-2 border-gray-300 rounded-lg p-4 mb-8 overflow-auto">
           <div className="relative inline-block">
             <canvas ref={canvasRef} className="bg-white" />
 
@@ -243,6 +220,11 @@ export default function PrintFloorPlanPage({
               const size = markerSizes[marker.id];
               if (!size) return null;
 
+              const scale = printScale;
+              const width = size.diameter * 0.875 * scale;
+              const height = size.diameter * 0.75 * scale;
+              const fontSize = size.fontSize * scale * 0.7;
+
               return (
                 <div
                   key={marker.id}
@@ -250,23 +232,24 @@ export default function PrintFloorPlanPage({
                   style={{
                     left: `${(marker.pixel_x * printScale)}px`,
                     top: `${(marker.pixel_y * printScale)}px`,
-                    width: `${size.diameter}px`,
-                    height: `${size.diameter}px`,
                   }}
                 >
                   <div
-                    className="rounded-full border-2 flex items-center justify-center font-bold overflow-hidden w-full h-full"
+                    className={`rounded-full border-2 flex items-center justify-center font-semibold overflow-hidden px-1 py-0.5 whitespace-nowrap ${
+                      marker.assigned_user_name
+                        ? "border-red-500 bg-red-100 text-red-700"
+                        : "border-green-500 bg-green-100 text-green-700"
+                    }`}
                     style={{
-                      borderColor: marker.assigned_user_name ? "#ef4444" : "#22c55e",
-                      backgroundColor: marker.assigned_user_name ? "#fee2e2" : "#f0fdf4",
-                      color: marker.assigned_user_name ? "#991b1b" : "#166534",
-                      fontSize: `${size.fontSize}px`,
                       fontFamily: "var(--font-roboto-condensed)",
+                      fontSize: `${fontSize}px`,
+                      minWidth: `${width}px`,
+                      height: `${height}px`,
                     }}
                   >
-                    <span className="text-center px-1 line-clamp-1">
-                      {marker.marker_number}
-                    </span>
+                    {marker.assigned_user_name
+                      ? getAbbreviatedName(marker.assigned_user_name)
+                      : marker.marker_number}
                   </div>
                 </div>
               );
@@ -274,38 +257,6 @@ export default function PrintFloorPlanPage({
           </div>
         </div>
 
-        {/* Legend table */}
-        <div className="legend-container">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Cubicle Legend</h2>
-          <table className="legend-table">
-            <thead>
-              <tr>
-                <th>Marker #</th>
-                <th>Assigned To</th>
-                <th>Email</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedMarkers.length === 0 ? (
-                <tr>
-                  <td colSpan={3} className="text-center text-gray-500">
-                    No cubicles mapped on this floor plan
-                  </td>
-                </tr>
-              ) : (
-                sortedMarkers.map((marker) => (
-                  <tr key={marker.id}>
-                    <td className="font-semibold">{marker.marker_number}</td>
-                    <td>
-                      {marker.assigned_user_name || "— unassigned —"}
-                    </td>
-                    <td>{marker.assigned_user_email || "—"}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
 
         {/* Back button */}
         <div className="mt-8 no-print">
@@ -317,6 +268,89 @@ export default function PrintFloorPlanPage({
           </Link>
         </div>
       </div>
+
+      {/* Print Options Modal */}
+      {showPrintOptions && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 no-print p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full border border-gray-200">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">Choose Print Option</h2>
+
+            <div className="space-y-3 mb-6">
+              <button
+                onClick={() => {
+                  window.print();
+                  setShowPrintOptions(false);
+                }}
+                className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors flex items-center gap-3"
+              >
+                <span>🖨️</span>
+                <span>Print Floor Plan with Markers</span>
+              </button>
+
+              <button
+                onClick={async () => {
+                  setShowPrintOptions(false);
+
+                  const toastId = toast.loading('Generating PDF...');
+
+                  try {
+                    const html2canvas = (await import('html2canvas')).default;
+                    const jsPDF = (await import('jspdf')).jsPDF;
+
+                    if (!floorPlanContainerRef.current) {
+                      toast.error('Floor plan not loaded', { id: toastId });
+                      return;
+                    }
+
+                    const captureElement = floorPlanContainerRef.current.querySelector('.relative.inline-block') as HTMLElement;
+
+                    if (!captureElement) {
+                      toast.error('Could not capture floor plan', { id: toastId });
+                      return;
+                    }
+
+                    const canvas = await html2canvas(captureElement, {
+                      scale: 2,
+                      backgroundColor: '#ffffff',
+                      logging: false,
+                    });
+
+                    const pdf = new jsPDF({
+                      orientation: 'landscape',
+                      unit: 'mm',
+                      format: 'a3',
+                    });
+
+                    const imgData = canvas.toDataURL('image/png');
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const pdfHeight = pdf.internal.pageSize.getHeight();
+                    const imgWidth = pdfWidth - 10;
+                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+                    pdf.addImage(imgData, 'PNG', 5, 5, imgWidth, imgHeight);
+                    pdf.save(`${floorPlan?.building}-Floor${floorPlan?.floor_number}-marked.pdf`);
+                    toast.success('PDF downloaded successfully', { id: toastId });
+                  } catch (error) {
+                    console.error('Error generating PDF:', error);
+                    toast.error('Failed to generate PDF', { id: toastId });
+                  }
+                }}
+                className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors flex items-center gap-3"
+              >
+                <span>📥</span>
+                <span>Download PDF with Markers</span>
+              </button>
+            </div>
+
+            <button
+              onClick={() => setShowPrintOptions(false)}
+              className="w-full px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg font-medium transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

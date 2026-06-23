@@ -27,6 +27,7 @@ export async function seed(knex) {
     name: "Admin",
     department: "IT",
     is_it_admin: true,
+    is_system_user: true,
     status: "active",
     password_hash: passwordHash,
   });

@@ -48,7 +48,7 @@ async function runWorkflow() {
     console.log("   • Seed mandatory data\n");
 
     rl.question(
-      'Type "DESTROY DATABASE" to confirm (or press Enter to cancel): ',
+      'Type "\x1b[1m\x1b[41mDESTROY DATABASE\x1b[0m" to confirm (or press Enter to cancel): ',
       async (answer) => {
         if (answer !== "DESTROY DATABASE") {
           console.log("\n❌ Operation cancelled.\n");

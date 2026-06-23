@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Navbar } from "@/components/navbar";
 import { toast } from "sonner";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface FloorPlan {
   id: string;
@@ -17,10 +18,30 @@ interface FloorPlan {
 }
 
 export default function FloorsPage() {
+  const router = useRouter();
   const [floorPlans, setFloorPlans] = useState<FloorPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [mobileViewMessage, setMobileViewMessage] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  const handleViewClick = (planId: string) => {
+    if (isMobile) {
+      setMobileViewMessage(true);
+    } else {
+      router.push(`/floor-plans/${planId}`);
+    }
+  };
 
   useEffect(() => {
     const fetchFloorPlans = async () => {
@@ -117,11 +138,12 @@ export default function FloorsPage() {
                 </p>
 
                 <div className="flex gap-2">
-                  <Link href={`/floor-plans/${plan.id}`} className="flex-1">
-                    <button className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-colors">
-                      View
-                    </button>
-                  </Link>
+                  <button
+                    onClick={() => handleViewClick(plan.id)}
+                    className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-colors"
+                  >
+                    View
+                  </button>
                   <button
                     onClick={() => setConfirmDelete(plan.id)}
                     disabled={deleting === plan.id}
@@ -155,6 +177,25 @@ export default function FloorsPage() {
                   className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
                 >
                   {deleting === confirmDelete ? "Deleting..." : "Delete"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {mobileViewMessage && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm mx-4">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Use Desktop for Better Experience</h3>
+              <p className="text-gray-600 mb-6">
+                Viewing and managing floor plans is optimized for desktop. Please use a larger screen for the best experience.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setMobileViewMessage(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
+                >
+                  Close
                 </button>
               </div>
             </div>
