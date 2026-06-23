@@ -52,6 +52,7 @@ async function setupDatabase() {
           // Connect with Windows auth to create the login
           const config = {
             server: process.env.DATABASE_HOST,
+            port: parseInt(process.env.DATABASE_PORT || "1433"),
             database: process.env.DATABASE_NAME,
             authentication: {
               type: "default",
@@ -120,8 +121,8 @@ async function setupDatabase() {
           console.log(`   Password: ${generatedPassword}\n`);
 
           console.log("📝 Update your .env.local file:");
-          console.log(`DATABASE_HOST=localhost`);
-          console.log(`DATABASE_PORT=1433`);
+          console.log(`DATABASE_HOST=${process.env.DATABASE_HOST}`);
+          console.log(`DATABASE_PORT=${process.env.DATABASE_PORT || "1433"}`);
           console.log(`DATABASE_NAME=${process.env.DATABASE_NAME}`);
           console.log(`DATABASE_USER=floorplan_user`);
           console.log(`DATABASE_PASSWORD=${generatedPassword}\n`);

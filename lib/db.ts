@@ -12,6 +12,7 @@ async function getPool(): Promise<sql.ConnectionPool> {
   if (!_pool) {
     _pool = new sql.ConnectionPool({
       server: process.env.DATABASE_HOST,
+      port: parseInt(process.env.DATABASE_PORT || "1433"),
       database: process.env.DATABASE_NAME,
       user: process.env.DATABASE_USER,
       password: process.env.DATABASE_PASSWORD,
