@@ -1,5 +1,5 @@
 const sql = require('mssql');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 require('dotenv').config({ path: '.env.local' });
 
 async function initAdmin() {
