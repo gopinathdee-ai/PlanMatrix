@@ -44,9 +44,15 @@ yarn-error.log*
 Thumbs.db
 .DS_Store
 
-# PDFs (if storing locally)
-public/floor-plans/*.pdf
+# Uploaded floor plan PDFs (user uploads only, not version controlled)
+public/pdfs/*.pdf
 
-# Drizzle
-/db/migrations/
-.drizzle
+# Database backups and local database files
+*.mdf
+*.ldf
+*.bak
+*.sql
+/db/backups/
+
+# Knex lock files
+knex-lock.json
