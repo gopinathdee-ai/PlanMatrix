@@ -3,11 +3,9 @@
 // Requires confirmation by typing 'DESTROY DATABASE'
 // Run with: npm run db:reset
 
-import dotenv from "dotenv";
+import knex from "knex";
 import readline from "readline";
-import sql from "mssql";
-
-dotenv.config({ path: ".env.local" });
+import knexConfig from "../knexfile.js";
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -15,27 +13,17 @@ const rl = readline.createInterface({
 });
 
 async function resetDatabase() {
+  const db = knex(knexConfig.development);
+  
   try {
     console.log("\n🗑️  Connecting to SQL Server...");
-
-    const config = {
-      server: process.env.DATABASE_HOST,
-      port: parseInt(process.env.DATABASE_PORT || "1433"),
-      database: process.env.DATABASE_NAME,
-      user: process.env.DATABASE_USER,
-      password: process.env.DATABASE_PASSWORD,
-      options: {
-        trustServerCertificate: true,
-        encrypt: false,
-      },
-    };
-
-    const pool = new sql.ConnectionPool(config);
-    await pool.connect();
+    
+    // Test connection
+    await db.raw('SELECT 1');
     console.log("✅ Connected\n");
 
     console.log("🔄 Dropping all tables...");
-    await pool.request().query(`
+    await db.raw(`
       DECLARE @sql NVARCHAR(MAX) = '';
       SELECT @sql += 'DROP TABLE ' + QUOTENAME(TABLE_SCHEMA) + '.' + QUOTENAME(TABLE_NAME) + '; '
       FROM INFORMATION_SCHEMA.TABLES
@@ -45,17 +33,18 @@ async function resetDatabase() {
     console.log("✅ All tables dropped");
 
     console.log("🔄 Clearing migration history...");
-    await pool.request().query(`
+    await db.raw(`
       IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'knex_migrations')
       DELETE FROM knex_migrations;
     `);
     console.log("✅ Migration history cleared\n");
 
-    await pool.close();
+    await db.destroy();
     rl.close();
     process.exit(0);
   } catch (error) {
     console.error("❌ Error resetting database:", error?.message || error);
+    if (db) await db.destroy();
     rl.close();
     process.exit(1);
   }
