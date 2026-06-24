@@ -98,9 +98,9 @@ export default function FloorPlanViewer({
         renderTaskRef.current = null;
       }
 
-      // Wait for canvas to be mounted (up to 500ms)
+      // Wait for canvas to be mounted (up to 1000ms)
       let attempts = 0;
-      const maxAttempts = 50;
+      const maxAttempts = 100;
       while (!canvasRef.current && attempts < maxAttempts) {
         await new Promise(resolve => setTimeout(resolve, 10));
         attempts++;
@@ -117,8 +117,13 @@ export default function FloorPlanViewer({
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
+        // Set dimensions precisely
         canvas.width = viewport.width;
         canvas.height = viewport.height;
+        
+        // Ensure browser respects the size
+        canvas.style.width = `${viewport.width}px`;
+        canvas.style.height = `${viewport.height}px`;
 
         const renderContext = {
           canvasContext: ctx,
@@ -139,10 +144,12 @@ export default function FloorPlanViewer({
       }
     };
 
-    renderPDF();
+    // Initial render with a slight delay to ensure DOM stability
+    const timeoutId = setTimeout(renderPDF, 50);
 
     return () => {
       cancelled = true;
+      clearTimeout(timeoutId);
       if (renderTaskRef.current) {
         renderTaskRef.current.cancel();
         renderTaskRef.current = null;
@@ -220,7 +227,6 @@ export default function FloorPlanViewer({
               });
 
               try {
-                const html2canvas = (await import('html2canvas')).default;
                 const jsPDF = (await import('jspdf')).jsPDF;
 
                 if (!pdfDoc) {
@@ -233,15 +239,6 @@ export default function FloorPlanViewer({
                 const printScale = PRINT_DPI / 72;
                 const page = await pdfDoc.getPage(1);
                 const viewport = page.getViewport({ scale: printScale });
-
-                // Create temporary container with rendered PDF and markers
-                const tempContainer = document.createElement('div');
-                tempContainer.style.position = 'absolute';
-                tempContainer.style.left = '-9999px';
-                tempContainer.style.width = `${viewport.width}px`;
-                tempContainer.style.height = `${viewport.height}px`;
-                tempContainer.className = 'relative inline-block';
-                document.body.appendChild(tempContainer);
 
                 // Render PDF to canvas
                 const printCanvas = document.createElement('canvas');
@@ -257,63 +254,67 @@ export default function FloorPlanViewer({
                 };
 
                 await page.render(renderContext).promise;
-                tempContainer.appendChild(printCanvas);
 
-                // Create marker overlays at print scale
+                // Draw markers directly to the canvas for pixel-perfect centering
                 markers.forEach((marker) => {
                   const size = markerSizes[marker.id];
                   if (!size) return;
 
                   const scale = printScale;
-                  const width = size.diameter * 0.875 * scale;
-                  const height = size.diameter * 0.75 * scale;
                   const fontSize = size.fontSize * scale * 0.7;
-
-                  const markerDiv = document.createElement('div');
-                  markerDiv.style.position = 'absolute';
-                  markerDiv.style.left = `${marker.pixel_x * scale}px`;
-                  markerDiv.style.top = `${marker.pixel_y * scale}px`;
-                  markerDiv.style.transform = 'translate(-50%, -50%)';
-                  markerDiv.style.cursor = 'pointer';
-
-                  const markerInner = document.createElement('div');
-                  markerInner.style.borderRadius = '9999px';
-                  markerInner.style.border = `2px solid ${marker.assigned_user_name ? '#ef4444' : '#22c55e'}`;
-                  markerInner.style.backgroundColor = marker.assigned_user_name ? '#fee2e2' : '#f0fdf4';
-                  markerInner.style.color = marker.assigned_user_name ? '#991b1b' : '#166534';
-                  markerInner.style.display = 'flex';
-                  markerInner.style.alignItems = 'center';
-                  markerInner.style.justifyContent = 'center';
-                  markerInner.style.fontWeight = '600';
-                  markerInner.style.overflow = 'hidden';
-                  markerInner.style.paddingTop = '2px';
-                  markerInner.style.paddingBottom = '2px';
-                  markerInner.style.paddingLeft = '4px';
-                  markerInner.style.paddingRight = '4px';
-                  markerInner.style.whiteSpace = 'nowrap';
-                  markerInner.style.minWidth = `${width}px`;
-                  markerInner.style.height = `${height}px`;
-                  markerInner.style.fontSize = `${fontSize}px`;
-                  markerInner.style.fontFamily = '"Roboto Condensed", sans-serif';
-
-                  markerInner.textContent = marker.assigned_user_name
-                    ? getAbbreviatedName(marker.assigned_user_name)
+                  
+                  // Calculate dimensions
+                  const text = marker.assigned_user_name 
+                    ? getAbbreviatedName(marker.assigned_user_name) 
                     : marker.marker_number;
+                  
+                  ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+                  const textMetrics = ctx.measureText(text);
+                  const textWidth = textMetrics.width;
+                  
+                  // Pill width is at least the nominal width, but grows for names
+                  const pillWidth = Math.max(size.diameter * 0.875 * scale, textWidth + 16);
+                  const pillHeight = size.diameter * 0.75 * scale;
+                  
+                  const x = marker.pixel_x * scale;
+                  const y = marker.pixel_y * scale;
 
-                  markerDiv.appendChild(markerInner);
-                  tempContainer.appendChild(markerDiv);
+                  // Draw the rounded rectangle
+                  ctx.beginPath();
+                  const rx = x - pillWidth / 2;
+                  const ry = y - pillHeight / 2;
+                  
+                  // Draw shadow-like effect or just the pill
+                  ctx.lineWidth = 2;
+                  ctx.strokeStyle = marker.assigned_user_name ? '#ef4444' : '#22c55e';
+                  ctx.fillStyle = marker.assigned_user_name ? '#fee2e2' : '#f0fdf4';
+                  
+                  // Manual roundRect for compatibility
+                  const r = 6; // border radius
+                  ctx.moveTo(rx + r, ry);
+                  ctx.lineTo(rx + pillWidth - r, ry);
+                  ctx.quadraticCurveTo(rx + pillWidth, ry, rx + pillWidth, ry + r);
+                  ctx.lineTo(rx + pillWidth, ry + pillHeight - r);
+                  ctx.quadraticCurveTo(rx + pillWidth, ry + pillHeight, rx + pillWidth - r, ry + pillHeight);
+                  ctx.lineTo(rx + r, ry + pillHeight);
+                  ctx.quadraticCurveTo(rx, ry + pillHeight, rx, ry + pillHeight - r);
+                  ctx.lineTo(rx, ry + r);
+                  ctx.quadraticCurveTo(rx, ry, rx + r, ry);
+                  ctx.closePath();
+                  
+                  ctx.fill();
+                  ctx.stroke();
+
+                  // Draw text with perfect baseline centering
+                  ctx.fillStyle = marker.assigned_user_name ? '#991b1b' : '#166534';
+                  ctx.textAlign = 'center';
+                  ctx.textBaseline = 'middle';
+                  ctx.fillText(text, x, y);
                 });
 
-                // Capture with html2canvas
-                const captureCanvas = await html2canvas(tempContainer, {
-                  scale: 2,
-                  backgroundColor: '#ffffff',
-                  logging: false,
-                  useCORS: true,
-                });
-
-                // Clean up
-                document.body.removeChild(tempContainer);
+                // Directly convert the printCanvas to image data
+                // No need for html2canvas here since we've already drawn the markers onto the ctx
+                const imgData = printCanvas.toDataURL('image/png');
 
                 // Generate PDF
                 const pdf = new jsPDF({
@@ -321,11 +322,9 @@ export default function FloorPlanViewer({
                   unit: 'mm',
                   format: 'a3',
                 });
-
-                const imgData = captureCanvas.toDataURL('image/png');
                 const pdfWidth = pdf.internal.pageSize.getWidth();
                 const imgWidth = pdfWidth - 10;
-                const imgHeight = (captureCanvas.height * imgWidth) / captureCanvas.width;
+                const imgHeight = (printCanvas.height * imgWidth) / printCanvas.width;
 
                 pdf.addImage(imgData, 'PNG', 5, 5, imgWidth, imgHeight);
                 pdf.save(`${floorPlan?.building}-Floor${floorPlan?.floor_number}-marked.pdf`);

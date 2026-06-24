@@ -95,11 +95,21 @@ export default function PrintFloorPlanPage({
 
   // Render PDF at print scale
   useEffect(() => {
-    if (!pdfDoc || !canvasRef.current) return;
+    if (!pdfDoc) return;
 
     let cancelled = false;
 
     async function renderPDF() {
+      // Wait for canvas to be mounted (up to 1000ms)
+      let attempts = 0;
+      const maxAttempts = 100;
+      while (!canvasRef.current && attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 10));
+        attempts++;
+      }
+
+      if (cancelled || !canvasRef.current) return;
+
       if (renderTaskRef.current) {
         renderTaskRef.current.cancel();
         renderTaskRef.current = null;
@@ -110,13 +120,15 @@ export default function PrintFloorPlanPage({
         const viewport = page.getViewport({ scale: printScale });
 
         const canvas = canvasRef.current;
-        if (!canvas) return;
-
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
         canvas.width = viewport.width;
         canvas.height = viewport.height;
+        
+        // Ensure browser respects the size
+        canvas.style.width = `${viewport.width}px`;
+        canvas.style.height = `${viewport.height}px`;
 
         const renderContext = {
           canvasContext: ctx,
@@ -235,11 +247,10 @@ export default function PrintFloorPlanPage({
                   }}
                 >
                   <div
-                    className={`rounded-full border-2 flex items-center justify-center font-semibold overflow-hidden px-1 py-0.5 whitespace-nowrap ${
-                      marker.assigned_user_name
+                    className={`rounded-full border-2 flex items-center justify-center font-semibold overflow-hidden px-1 py-0.5 whitespace-nowrap ${marker.assigned_user_name
                         ? "border-red-500 bg-red-100 text-red-700"
                         : "border-green-500 bg-green-100 text-green-700"
-                    }`}
+                      }`}
                     style={{
                       fontFamily: "var(--font-roboto-condensed)",
                       fontSize: `${fontSize}px`,
@@ -290,30 +301,71 @@ export default function PrintFloorPlanPage({
               <button
                 onClick={async () => {
                   setShowPrintOptions(false);
-
                   const toastId = toast.loading('Generating PDF...');
 
                   try {
-                    const html2canvas = (await import('html2canvas')).default;
                     const jsPDF = (await import('jspdf')).jsPDF;
 
-                    if (!floorPlanContainerRef.current) {
+                    if (!pdfDoc || !canvasRef.current) {
                       toast.error('Floor plan not loaded', { id: toastId });
                       return;
                     }
 
-                    const captureElement = floorPlanContainerRef.current.querySelector('.relative.inline-block') as HTMLElement;
+                    // The canvas (canvasRef.current) already has the high-res PDF rendered
+                    const ctx = canvasRef.current.getContext('2d');
+                    if (!ctx) throw new Error('Could not get canvas context');
 
-                    if (!captureElement) {
-                      toast.error('Could not capture floor plan', { id: toastId });
-                      return;
-                    }
+                    // Draw markers directly onto the canvas for pixel-perfect centering
+                    markers.forEach((marker) => {
+                      const size = markerSizes[marker.id];
+                      if (!size) return;
 
-                    const canvas = await html2canvas(captureElement, {
-                      scale: 2,
-                      backgroundColor: '#ffffff',
-                      logging: false,
+                      const scale = printScale;
+                      const fontSize = size.fontSize * scale * 0.7;
+                      
+                      const text = marker.assigned_user_name 
+                        ? getAbbreviatedName(marker.assigned_user_name) 
+                        : marker.marker_number;
+                      
+                      ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+                      const textMetrics = ctx.measureText(text);
+                      const textWidth = textMetrics.width;
+                      
+                      const pillWidth = Math.max(size.diameter * 0.875 * scale, textWidth + 16);
+                      const pillHeight = size.diameter * 0.75 * scale;
+                      
+                      const x = marker.pixel_x * scale;
+                      const y = marker.pixel_y * scale;
+
+                      ctx.beginPath();
+                      const rx = x - pillWidth / 2;
+                      const ry = y - pillHeight / 2;
+                      
+                      ctx.lineWidth = 2;
+                      ctx.strokeStyle = marker.assigned_user_name ? '#ef4444' : '#22c55e';
+                      ctx.fillStyle = marker.assigned_user_name ? '#fee2e2' : '#f0fdf4';
+                      
+                      const r = 6;
+                      ctx.moveTo(rx + r, ry);
+                      ctx.lineTo(rx + pillWidth - r, ry);
+                      ctx.quadraticCurveTo(rx + pillWidth, ry, rx + pillWidth, ry + r);
+                      ctx.lineTo(rx + pillWidth, ry + pillHeight - r);
+                      ctx.quadraticCurveTo(rx + pillWidth, ry + pillHeight, rx + pillWidth - r, ry + pillHeight);
+                      ctx.lineTo(rx + r, ry + pillHeight);
+                      ctx.quadraticCurveTo(rx, ry + pillHeight, rx, ry + pillHeight - r);
+                      ctx.lineTo(rx, ry + r);
+                      ctx.quadraticCurveTo(rx, ry, rx + r, ry);
+                      ctx.closePath();
+                      ctx.fill();
+                      ctx.stroke();
+
+                      ctx.fillStyle = marker.assigned_user_name ? '#991b1b' : '#166534';
+                      ctx.textAlign = 'center';
+                      ctx.textBaseline = 'middle';
+                      ctx.fillText(text, x, y);
                     });
+
+                    const imgData = canvasRef.current.toDataURL('image/png');
 
                     const pdf = new jsPDF({
                       orientation: 'landscape',
@@ -321,14 +373,13 @@ export default function PrintFloorPlanPage({
                       format: 'a3',
                     });
 
-                    const imgData = canvas.toDataURL('image/png');
                     const pdfWidth = pdf.internal.pageSize.getWidth();
-                    const pdfHeight = pdf.internal.pageSize.getHeight();
                     const imgWidth = pdfWidth - 10;
-                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                    const imgHeight = (canvasRef.current.height * imgWidth) / canvasRef.current.width;
 
                     pdf.addImage(imgData, 'PNG', 5, 5, imgWidth, imgHeight);
                     pdf.save(`${floorPlan?.building}-Floor${floorPlan?.floor_number}-marked.pdf`);
+                    
                     toast.success('PDF downloaded successfully', { id: toastId });
                   } catch (error) {
                     console.error('Error generating PDF:', error);
