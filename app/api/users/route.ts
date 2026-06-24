@@ -12,8 +12,8 @@ export async function GET() {
 
   try {
     const users = await db("users")
-      .leftJoin("assignments", "users.id = assignments.user_id")
-      .leftJoin("markers", "assignments.marker_id = markers.id")
+      .leftJoin("assignments", "users.id", "assignments.user_id")
+      .leftJoin("markers", "assignments.marker_id", "markers.id")
       .where("users.is_system_user", 0)
       .whereNotNull("users.email")
       .orderBy("users.created_at", "desc")

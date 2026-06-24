@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // This is the modern way to handle Knex and other server-side libraries 
+  // that have dynamic requirements. It works for both Webpack and Turbopack.
+  serverExternalPackages: ["knex"],
   headers: async () => {
     return [
       {

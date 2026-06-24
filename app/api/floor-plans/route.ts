@@ -18,14 +18,14 @@ export async function GET() {
       floorPlans.map(async (plan: any) => {
         const markerCount = await db("markers")
           .where("floor_plan_id", plan.id)
-          .count("*", "count")
+          .count({ count: "*" })
           .first();
 
         const occupiedCount = await db("markers")
-          .leftJoin("assignments", "markers.id = assignments.marker_id")
+          .leftJoin("assignments", "markers.id", "assignments.marker_id")
           .where("markers.floor_plan_id", plan.id)
           .whereNotNull("assignments.id")
-          .count("*", "count")
+          .count({ count: "*" })
           .first();
 
         return {
@@ -38,6 +38,7 @@ export async function GET() {
 
     return NextResponse.json(plansWithCounts);
   } catch (error: any) {
+    console.error("Floor plans fetch error:", error);
     return NextResponse.json(
       { error: error.message },
       { status: 500 }
