@@ -69,9 +69,14 @@ export default function FloorPlanViewer({
           setMarkers(markerData);
 
           const sizes = computeMarkerSizes(markerData);
-          const sizeMap: Record<string, { diameter: number; fontSize: number }> = {};
+          const sizeMap: Record<string, { diameter: number; width: number; height: number; fontSize: number }> = {};
           sizes.forEach((size) => {
-            sizeMap[size.id] = { diameter: size.diameter, fontSize: size.fontSize };
+            sizeMap[size.id] = { 
+              diameter: size.diameter, 
+              width: size.width, 
+              height: size.height, 
+              fontSize: size.fontSize 
+            };
           });
           setMarkerSizes(sizeMap);
         }
@@ -260,42 +265,38 @@ export default function FloorPlanViewer({
                   const size = markerSizes[marker.id];
                   if (!size) return;
 
-                  const scale = printScale;
-                  const fontSize = size.fontSize * scale * 0.7;
+                  const x = marker.pixel_x * printScale;
+                  const y = marker.pixel_y * printScale;
+
+                  const pillWidth = size.width * printScale;
+                  const pillHeight = size.height * printScale;
+                  const fontSize = size.fontSize * printScale;
                   
-                  // Calculate dimensions
                   const text = marker.assigned_user_name 
                     ? getAbbreviatedName(marker.assigned_user_name) 
                     : marker.marker_number;
                   
                   ctx.font = `bold ${fontSize}px Arial, sans-serif`;
                   const textMetrics = ctx.measureText(text);
-                  const textWidth = textMetrics.width;
                   
-                  // Pill width is at least the nominal width, but grows for names
-                  const pillWidth = Math.max(size.diameter * 0.875 * scale, textWidth + 16);
-                  const pillHeight = size.diameter * 0.75 * scale;
-                  
-                  const x = marker.pixel_x * scale;
-                  const y = marker.pixel_y * scale;
+                  // Ensure pill is at least wide enough for text
+                  const finalPillWidth = Math.max(pillWidth, textMetrics.width + 16);
 
                   // Draw the rounded rectangle
                   ctx.beginPath();
-                  const rx = x - pillWidth / 2;
+                  const rx = x - finalPillWidth / 2;
                   const ry = y - pillHeight / 2;
                   
-                  // Draw shadow-like effect or just the pill
                   ctx.lineWidth = 2;
-                  ctx.strokeStyle = marker.assigned_user_name ? '#ef4444' : '#22c55e';
-                  ctx.fillStyle = marker.assigned_user_name ? '#fee2e2' : '#f0fdf4';
+                  ctx.strokeStyle = marker.assigned_user_name ? '#22c55e' : '#3b82f6';
+                  ctx.fillStyle = marker.assigned_user_name ? '#f0fdf4' : '#dbeafe';
                   
-                  // Manual roundRect for compatibility
-                  const r = 6; // border radius
+                  const r = pillHeight / 2; // Full rounded ends (pill)
                   ctx.moveTo(rx + r, ry);
-                  ctx.lineTo(rx + pillWidth - r, ry);
-                  ctx.quadraticCurveTo(rx + pillWidth, ry, rx + pillWidth, ry + r);
-                  ctx.lineTo(rx + pillWidth, ry + pillHeight - r);
-                  ctx.quadraticCurveTo(rx + pillWidth, ry + pillHeight, rx + pillWidth - r, ry + pillHeight);
+                  ctx.lineTo(rx + finalPillWidth - r, ry);
+                  ctx.quadraticCurveTo(rx + finalPillWidth, ry, rx + finalPillWidth, ry + r);
+                  ctx.lineTo(rx + finalPillWidth, ry + pillHeight - r);
+                  ctx.quadraticCurveTo(rx + finalPillWidth, ry + pillHeight, rx + finalPillWidth - r, ry + pillHeight);
                   ctx.lineTo(rx + r, ry + pillHeight);
                   ctx.quadraticCurveTo(rx, ry + pillHeight, rx, ry + pillHeight - r);
                   ctx.lineTo(rx, ry + r);
@@ -306,7 +307,7 @@ export default function FloorPlanViewer({
                   ctx.stroke();
 
                   // Draw text with perfect baseline centering
-                  ctx.fillStyle = marker.assigned_user_name ? '#991b1b' : '#166534';
+                  ctx.fillStyle = marker.assigned_user_name ? '#166534' : '#1d4ed8';
                   ctx.textAlign = 'center';
                   ctx.textBaseline = 'middle';
                   ctx.fillText(text, x, y);
@@ -402,9 +403,9 @@ export default function FloorPlanViewer({
             if (!size) return null;
 
             const scale = zoom / 100;
-            const width = size.diameter * 0.875 * scale; // proportional to diameter
-            const height = size.diameter * 0.75 * scale;
-            const fontSize = size.fontSize * scale * 0.7; // reduced font size
+            const width = size.width * scale;
+            const height = size.height * scale;
+            const fontSize = size.fontSize * scale;
 
             return (
               <div
@@ -418,8 +419,8 @@ export default function FloorPlanViewer({
                 <div
                   className={`rounded-full border-2 flex items-center justify-center font-semibold overflow-hidden px-1 py-0.5 whitespace-nowrap ${
                     marker.assigned_user_name
-                      ? "border-red-500 bg-red-100 text-red-700"
-                      : "border-green-500 bg-green-100 text-green-700"
+                      ? "border-green-500 bg-green-100 text-green-700"
+                      : "border-blue-500 bg-blue-100 text-blue-700"
                   }`}
                   style={{
                     fontFamily: "var(--font-roboto-condensed)",

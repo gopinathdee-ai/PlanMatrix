@@ -2,20 +2,24 @@
 // Provides consistent sizing and initials extraction
 
 export interface MarkerSize {
-  diameter: number;
+  diameter: number; // Still kept for scaling and backward compatibility
+  width: number;
+  height: number;
   fontSize: number;
 }
 
 /**
- * Calculate marker circle diameter and font size based on zoom level.
+ * Calculate marker dimensions and font size based on zoom level.
  * @param baseDiameter Base diameter at 100% zoom (in pixels)
  * @param zoom Current zoom percentage (e.g., 100, 150, 200)
- * @returns Object with computed diameter and fontSize
+ * @returns Object with computed width, height and fontSize
  */
 export function getMarkerSize(baseDiameter: number, zoom: number): MarkerSize {
   const diameter = baseDiameter * (zoom / 100);
-  const fontSize = diameter * 0.35; // 35% of diameter for readable text
-  return { diameter, fontSize };
+  const width = diameter * 1.15; // Slightly wider for pill shape
+  const height = diameter * 0.85; // Slightly shorter for pill shape
+  const fontSize = diameter * 0.28; // Standardized ratio
+  return { diameter, width, height, fontSize };
 }
 
 /**

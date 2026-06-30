@@ -17,7 +17,7 @@ export interface MarkerSize {
 const MIN_DIAMETER = 10; // floor: never shrink below this for legibility at A3
 const MAX_DIAMETER = 40; // ceiling: don't balloon isolated markers
 const DIAMETER_FRACTION = 0.6; // circle uses at most 60% of nearest-neighbor gap
-const FONT_FRACTION = 0.55; // font size as fraction of diameter
+const FONT_FRACTION = 0.45; // Reduced from 0.55 for consistency
 
 /**
  * Compute per-marker circle size based on distance to nearest neighbor.
@@ -53,9 +53,11 @@ export function computeMarkerSizes(markers: MarkerPoint[]): MarkerSize[] {
     // Clamp diameter: use fraction of gap, but stay within bounds
     const raw = nearestDist * DIAMETER_FRACTION;
     const diameter = Math.max(MIN_DIAMETER, Math.min(MAX_DIAMETER, raw));
+    const width = diameter * 1.15;
+    const height = diameter * 0.85;
     const fontSize = diameter * FONT_FRACTION;
 
-    return { id: marker.id, diameter, fontSize };
+    return { id: marker.id, diameter, width, height, fontSize };
   });
 }
 
@@ -71,6 +73,8 @@ export function computeUniformMarkerSize(markers: MarkerPoint[]): MarkerSize | n
   return {
     id: "uniform",
     diameter: minDiameter,
+    width: minDiameter * 1.15,
+    height: minDiameter * 0.85,
     fontSize: minDiameter * FONT_FRACTION,
   };
 }

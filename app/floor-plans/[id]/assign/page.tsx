@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ChevronLeft, ZoomIn, ZoomOut } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { toast } from "sonner";
-import { getMarkerSize, getInitials } from "@/lib/markerDisplay";
+import { getMarkerSize, getAbbreviatedName } from "@/lib/markerDisplay";
 
 interface FloorPlan {
   id: string;
@@ -408,7 +408,7 @@ export default function ManualAssignmentPage({
           />
 
           {markers.map((marker) => {
-            const { diameter, fontSize } = getMarkerSize(32, zoom);
+            const { width, height, fontSize } = getMarkerSize(32, zoom);
             return (
               <div
                 key={marker.id}
@@ -416,8 +416,8 @@ export default function ManualAssignmentPage({
                 style={{
                   left: `${(marker.pixel_x * zoom) / 100}px`,
                   top: `${(marker.pixel_y * zoom) / 100}px`,
-                  width: `${diameter}px`,
-                  height: `${diameter}px`,
+                  width: `${width}px`,
+                  height: `${height}px`,
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -427,14 +427,14 @@ export default function ManualAssignmentPage({
                 <div
                   className={`rounded-full border-2 flex items-center justify-center font-bold transition-all hover:scale-125 w-full h-full overflow-hidden ${
                     marker.assigned_user_name
-                      ? "border-red-500 bg-red-100 text-red-700"
-                      : "border-green-500 bg-green-100 text-green-700"
+                      ? "border-green-500 bg-green-100 text-green-700"
+                      : "border-blue-500 bg-blue-100 text-blue-700"
                   }`}
                   style={{ fontFamily: "var(--font-roboto-condensed)", fontSize: `${fontSize}px` }}
                 >
                   <span className="text-center px-1 line-clamp-1">
                     {marker.assigned_user_name
-                      ? getInitials(marker.assigned_user_name)
+                      ? getAbbreviatedName(marker.assigned_user_name)
                       : marker.marker_number}
                   </span>
                 </div>

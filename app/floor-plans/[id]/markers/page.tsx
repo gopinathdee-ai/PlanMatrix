@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ChevronLeft, Plus, Trash2, Edit2 } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { toast } from "sonner";
-import { getMarkerSize, getInitials } from "@/lib/markerDisplay";
+import { getMarkerSize, getAbbreviatedName } from "@/lib/markerDisplay";
 
 interface FloorPlan {
   id: string;
@@ -30,7 +30,7 @@ export default function MarkerPlacementPage({
   const params = use(paramsPromise);
   const [floorPlan, setFloorPlan] = useState<FloorPlan | null>(null);
   const [markers, setMarkers] = useState<Marker[]>([]);
-  const [zoom, setZoom] = useState(100);
+  const [zoom, setZoom] = useState(200);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [pdfDoc, setPdfDoc] = useState<any>(null);
@@ -360,7 +360,7 @@ export default function MarkerPlacementPage({
               />
 
               {markers.map((marker) => {
-                const { diameter, fontSize } = getMarkerSize(24, zoom);
+                const { width, height, fontSize } = getMarkerSize(24, zoom);
                 return (
                   <div
                     key={marker.id}
@@ -368,19 +368,19 @@ export default function MarkerPlacementPage({
                     style={{
                       left: `${(marker.pixel_x * zoom) / 100}px`,
                       top: `${(marker.pixel_y * zoom) / 100}px`,
-                      width: `${diameter}px`,
-                      height: `${diameter}px`,
+                      width: `${width}px`,
+                      height: `${height}px`,
                     }}
                   >
                     <div className={`rounded-full border-2 flex items-center justify-center font-bold overflow-hidden w-full h-full ${
                       marker.assigned_user_name
-                        ? "border-red-500 bg-red-100 text-red-700"
+                        ? "border-green-500 bg-green-100 text-green-700"
                         : "border-blue-500 bg-blue-100 text-blue-700"
                     }`}
                     style={{ fontFamily: "var(--font-roboto-condensed)", fontSize: `${fontSize}px` }}>
                       <span className="text-center px-0.5 line-clamp-1">
                         {marker.assigned_user_name
-                          ? getInitials(marker.assigned_user_name)
+                          ? getAbbreviatedName(marker.assigned_user_name)
                           : marker.marker_number}
                       </span>
                     </div>
